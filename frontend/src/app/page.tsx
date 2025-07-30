@@ -46,7 +46,9 @@ export default function Home() {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const uploadResponse = await fetch('http://127.0.0.1:8000/upload', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+      
+      const uploadResponse = await fetch(`${apiUrl}/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -59,7 +61,7 @@ export default function Home() {
       const reportId = uploadResult.report_id;
 
       // Get report
-      const reportResponse = await fetch(`http://127.0.0.1:8000/report/${reportId}`);
+      const reportResponse = await fetch(`${apiUrl}/report/${reportId}`);
       
       if (!reportResponse.ok) {
         throw new Error('Failed to get report');

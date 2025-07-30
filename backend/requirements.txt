@@ -3,3 +3,4 @@ uvicorn
 pdfplumber
 PyPDF2
 pyyaml
+python-multipart
