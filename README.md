@@ -58,7 +58,7 @@ mortgagebuddy/
 
 4. **Test the Application**
    - Open `http://localhost:3000` in your browser
-   - Upload the test PDF (`backend/test_closing_document.pdf`)
+   - Upload the test PDF (`test_closing_document.pdf`)
    - View the analysis results with detected flags
 
 ### Backend (FastAPI)
