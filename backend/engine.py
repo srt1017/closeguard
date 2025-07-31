@@ -62,6 +62,47 @@ class RuleEngine:
         
         return flags
     
+    def calculate_forensic_score(self, flags: List[Dict[str, str]]) -> int:
+        """Calculate forensic score (0-100) based on detected flags."""
+        if not flags:
+            return 100  # Perfect score if no issues
+            
+        max_score = 100
+        severity_weights = {
+            'high': 20,     # High severity flags deduct 20 points each
+            'medium': 10,   # Medium severity flags deduct 10 points each
+            'low': 5        # Low severity flags deduct 5 points each
+        }
+        
+        total_deductions = 0
+        for flag in flags:
+            message = flag.get('message', '').lower()
+            # Determine severity based on message content
+            if any(keyword in message for keyword in ['🚨', 'critical', 'error', 'fraud']):
+                total_deductions += severity_weights['high']
+            elif any(keyword in message for keyword in ['⚠️', 'warning', 'dangerous', 'excessive']):
+                total_deductions += severity_weights['medium']
+            else:
+                total_deductions += severity_weights['low']
+        
+        forensic_score = max(0, max_score - total_deductions)
+        return forensic_score
+    
+    def categorize_flags_by_severity(self, flags: List[Dict[str, str]]) -> Dict[str, int]:
+        """Categorize flags by severity level."""
+        severity_counts = {'high': 0, 'medium': 0, 'low': 0}
+        
+        for flag in flags:
+            message = flag.get('message', '').lower()
+            if any(keyword in message for keyword in ['🚨', 'critical', 'error', 'fraud']):
+                severity_counts['high'] += 1
+            elif any(keyword in message for keyword in ['⚠️', 'warning', 'dangerous', 'excessive']):
+                severity_counts['medium'] += 1
+            else:
+                severity_counts['low'] += 1
+                
+        return severity_counts
+    
     def check_text_with_context(self, text: str, user_context: Dict[str, Any]) -> List[Dict[str, str]]:
         """
         Run all rules against the provided text with user context for enhanced analysis.

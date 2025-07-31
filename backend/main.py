@@ -151,13 +151,22 @@ async def upload_pdf(
                 else:
                     flags = rule_engine.check_text(extracted_text)
             
+            # Calculate forensic analytics
+            forensic_score = rule_engine.calculate_forensic_score(flags) if rule_engine else 100
+            severity_counts = rule_engine.categorize_flags_by_severity(flags) if rule_engine else {'high': 0, 'medium': 0, 'low': 0}
+            
             # Store report in memory
             reports_store[report_id] = {
                 "status": "done",
                 "flags": flags,
                 "filename": file.filename,
                 "text_length": len(extracted_text),
-                "user_context": user_context.dict() if user_context else None
+                "user_context": user_context.dict() if user_context else None,
+                "forensic_score": forensic_score,
+                "total_flags": len(flags),
+                "high_severity": severity_counts['high'],
+                "medium_severity": severity_counts['medium'],
+                "low_severity": severity_counts['low']
             }
             
         finally:
@@ -199,6 +208,13 @@ async def get_report(report_id: str):
         content={
             "status": report["status"],
             "flags": report["flags"],
+            "analytics": {
+                "forensic_score": report.get("forensic_score", 100),
+                "total_flags": report.get("total_flags", 0),
+                "high_severity": report.get("high_severity", 0),
+                "medium_severity": report.get("medium_severity", 0),
+                "low_severity": report.get("low_severity", 0)
+            },
             "metadata": {
                 "filename": report.get("filename"),
                 "text_length": report.get("text_length")

@@ -11,6 +11,13 @@ interface Flag {
 interface Report {
   status: string;
   flags: Flag[];
+  analytics?: {
+    forensic_score: number;
+    total_flags: number;
+    high_severity: number;
+    medium_severity: number;
+    low_severity: number;
+  };
   metadata?: {
     filename: string;
     text_length: number;
@@ -705,6 +712,119 @@ export default function Home() {
                     Start over with new document
                   </button>
                 </div>
+
+                {/* Forensic Score Dashboard */}
+                {report.analytics && (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    {/* Forensic Score */}
+                    <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+                      <div className="flex items-center">
+                        <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 mr-4">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-600 font-medium">Forensic Score</p>
+                          <p className={`text-2xl font-bold ${
+                            report.analytics.forensic_score < 30 
+                              ? 'text-red-600' 
+                              : report.analytics.forensic_score < 70 
+                              ? 'text-yellow-600' 
+                              : 'text-green-600'
+                          }`}>
+                            {report.analytics.forensic_score}/100
+                          </p>
+                          <p className={`text-xs font-medium ${
+                            report.analytics.forensic_score < 30 
+                              ? 'text-red-600' 
+                              : report.analytics.forensic_score < 70 
+                              ? 'text-yellow-600' 
+                              : 'text-green-600'
+                          }`}>
+                            {report.analytics.forensic_score < 30 
+                              ? 'HIGH RISK' 
+                              : report.analytics.forensic_score < 70 
+                              ? 'MODERATE RISK' 
+                              : 'LOW RISK'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Total Red Flags */}
+                    <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+                      <div className="flex items-center">
+                        <div className="p-3 rounded-lg bg-gradient-to-br from-red-500 to-red-600 mr-4">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-600 font-medium">Red Flags</p>
+                          <p className="text-2xl font-bold text-red-600">{report.analytics.total_flags}</p>
+                          <p className="text-xs text-slate-500">Issues detected</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* High Severity */}
+                    <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+                      <div className="flex items-center">
+                        <div className="p-3 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 mr-4">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-600 font-medium">Critical Issues</p>
+                          <p className="text-2xl font-bold text-orange-600">{report.analytics.high_severity}</p>
+                          <p className="text-xs text-slate-500">High severity</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Risk Assessment */}
+                    <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+                      <div className="flex items-center">
+                        <div className={`p-3 rounded-lg mr-4 ${
+                          report.analytics.forensic_score < 30 
+                            ? 'bg-gradient-to-br from-red-500 to-red-600' 
+                            : report.analytics.forensic_score < 70 
+                            ? 'bg-gradient-to-br from-yellow-500 to-orange-500' 
+                            : 'bg-gradient-to-br from-green-500 to-green-600'
+                        }`}>
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-600 font-medium">Protection Level</p>
+                          <p className={`text-lg font-bold ${
+                            report.analytics.forensic_score < 30 
+                              ? 'text-red-600' 
+                              : report.analytics.forensic_score < 70 
+                              ? 'text-yellow-600' 
+                              : 'text-green-600'
+                          }`}>
+                            {report.analytics.forensic_score < 30 
+                              ? '🚨 URGENT' 
+                              : report.analytics.forensic_score < 70 
+                              ? '⚠️ REVIEW' 
+                              : '✅ SECURE'}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {report.analytics.forensic_score < 30 
+                              ? 'Action needed' 
+                              : report.analytics.forensic_score < 70 
+                              ? 'Monitor closely' 
+                              : 'Well protected'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="bg-slate-50 rounded-xl p-6 mb-8">
                   <div className="flex items-center justify-between mb-4">
