@@ -39,11 +39,23 @@ class RuleEngine:
             List of flags, each containing rule name, message, and snippet
         """
         flags = []
+        flagged_rules = set()  # Track which rules have already been flagged
         
         for rule in self.rules:
             try:
+                rule_name = rule.get('name', 'unknown')
+                
+                # Skip if this rule has already been flagged
+                if rule_name in flagged_rules:
+                    continue
+                    
                 rule_flags = self._apply_rule(rule, text)
-                flags.extend(rule_flags)
+                
+                # If this rule found any flags, add the first one and mark rule as flagged
+                if rule_flags:
+                    flags.append(rule_flags[0])  # Only take the first match
+                    flagged_rules.add(rule_name)
+                    
             except Exception as e:
                 # Log error but continue with other rules
                 print(f"Error applying rule '{rule.get('name', 'unknown')}': {e}")
