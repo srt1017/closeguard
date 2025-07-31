@@ -294,7 +294,7 @@ export default function Home() {
                             type="number"
                             value={userContext.expectedPurchasePrice || ''}
                             onChange={(e) => setUserContext({...userContext, expectedPurchasePrice: e.target.value ? Number(e.target.value) : undefined})}
-                            className="block w-full pl-7 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            className="block w-full pl-7 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-slate-900 bg-white"
                             placeholder="400000"
                           />
                         </div>
@@ -311,7 +311,7 @@ export default function Home() {
                             type="number"
                             value={userContext.expectedLoanAmount || ''}
                             onChange={(e) => setUserContext({...userContext, expectedLoanAmount: e.target.value ? Number(e.target.value) : undefined})}
-                            className="block w-full pl-7 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            className="block w-full pl-7 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-slate-900 bg-white"
                             placeholder="320000"
                           />
                         </div>
@@ -391,7 +391,7 @@ export default function Home() {
                                 type="number"
                                 value={userContext.promisedLenderCredit || ''}
                                 onChange={(e) => setUserContext({...userContext, promisedLenderCredit: e.target.value ? Number(e.target.value) : undefined})}
-                                className="block w-full pl-7 pr-3 py-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                                className="block w-full pl-7 pr-3 py-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-sm text-slate-900 bg-white"
                                 placeholder="0"
                               />
                             </div>
@@ -406,7 +406,7 @@ export default function Home() {
                                 type="number"
                                 value={userContext.promisedSellerCredit || ''}
                                 onChange={(e) => setUserContext({...userContext, promisedSellerCredit: e.target.value ? Number(e.target.value) : undefined})}
-                                className="block w-full pl-7 pr-3 py-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                                className="block w-full pl-7 pr-3 py-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-sm text-slate-900 bg-white"
                                 placeholder="0"
                               />
                             </div>
@@ -421,7 +421,7 @@ export default function Home() {
                                 type="number"
                                 value={userContext.promisedRebate || ''}
                                 onChange={(e) => setUserContext({...userContext, promisedRebate: e.target.value ? Number(e.target.value) : undefined})}
-                                className="block w-full pl-7 pr-3 py-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                                className="block w-full pl-7 pr-3 py-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-sm text-slate-900 bg-white"
                                 placeholder="0"
                               />
                             </div>
@@ -480,7 +480,7 @@ export default function Home() {
                             type="text"
                             value={userContext.builderName || ''}
                             onChange={(e) => setUserContext({...userContext, builderName: e.target.value})}
-                            className="w-full px-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                            className="w-full px-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-slate-900 bg-white"
                             placeholder="e.g., LGI Homes, D.R. Horton, etc."
                           />
                         </div>
@@ -563,7 +563,7 @@ export default function Home() {
                           type="text"
                           value={userContext.buyerAgentName || ''}
                           onChange={(e) => setUserContext({...userContext, buyerAgentName: e.target.value})}
-                          className="w-full px-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                          className="w-full px-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-slate-900 bg-white"
                           placeholder="Your buyer's agent name"
                         />
                       </div>
