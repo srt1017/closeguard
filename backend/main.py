@@ -32,14 +32,38 @@ app.add_middleware(
 reports_store: Dict[str, Dict[str, Any]] = {}
 
 # Initialize rule engine
-try:
-    import os
-    config_path = os.path.join(os.path.dirname(__file__), "rules-config.yaml")
-    rule_engine = RuleEngine(config_path)
-    print(f"Rule engine initialized successfully with {len(rule_engine.rules)} rules")
-except Exception as e:
-    print(f"Warning: Failed to initialize rule engine: {e}")
-    rule_engine = None
+rule_engine = None
+print("Starting CloseGuard API...")
+
+def init_rule_engine():
+    global rule_engine
+    try:
+        import os
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Files in directory: {os.listdir('.')}")
+        
+        config_path = os.path.join(os.path.dirname(__file__), "rules-config.yaml")
+        print(f"Looking for rules config at: {config_path}")
+        
+        if os.path.exists(config_path):
+            rule_engine = RuleEngine(config_path)
+            print(f"Rule engine initialized successfully with {len(rule_engine.rules)} rules")
+        else:
+            print(f"Rules config file not found at {config_path}")
+            # Try current directory as fallback
+            if os.path.exists("rules-config.yaml"):
+                rule_engine = RuleEngine("rules-config.yaml")
+                print(f"Rule engine initialized from current directory with {len(rule_engine.rules)} rules")
+            else:
+                print("No rules config found - continuing without rules")
+    except Exception as e:
+        print(f"Warning: Failed to initialize rule engine: {e}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        traceback.print_exc()
+
+# Initialize at startup
+init_rule_engine()
 
 
 @app.get("/")
