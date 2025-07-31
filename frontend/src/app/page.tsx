@@ -168,23 +168,43 @@ export default function Home() {
     }
   };
 
-  const getSeverityColor = (message: string) => {
+  const getSeverityLevel = (message: string) => {
     if (message.includes('🚨') || message.includes('CRITICAL') || message.includes('ERROR') || message.includes('FRAUD')) {
-      return 'border-red-200 bg-red-50';
-    } else if (message.includes('⚠️') || message.includes('WARNING') || message.includes('DANGEROUS')) {
-      return 'border-amber-200 bg-amber-50';
+      return 'high';
+    } else if (message.includes('⚠️') || message.includes('WARNING') || message.includes('DANGEROUS') || message.includes('EXCESSIVE')) {
+      return 'medium';
     } else {
-      return 'border-blue-200 bg-blue-50';
+      return 'low';
+    }
+  };
+
+  const getSeverityColor = (message: string) => {
+    const severity = getSeverityLevel(message);
+    switch(severity) {
+      case 'high': return 'border-red-300 bg-red-100';
+      case 'medium': return 'border-yellow-300 bg-yellow-100';
+      case 'low': return 'border-blue-300 bg-blue-100';
+      default: return 'border-gray-300 bg-gray-100';
     }
   };
 
   const getSeverityTextColor = (message: string) => {
-    if (message.includes('🚨') || message.includes('CRITICAL') || message.includes('ERROR') || message.includes('FRAUD')) {
-      return 'text-red-900';
-    } else if (message.includes('⚠️') || message.includes('WARNING') || message.includes('DANGEROUS')) {
-      return 'text-amber-900';
-    } else {
-      return 'text-blue-900';
+    const severity = getSeverityLevel(message);
+    switch(severity) {
+      case 'high': return 'text-red-700';
+      case 'medium': return 'text-yellow-700';
+      case 'low': return 'text-blue-700';
+      default: return 'text-gray-700';
+    }
+  };
+
+  const getSeverityBadgeColor = (message: string) => {
+    const severity = getSeverityLevel(message);
+    switch(severity) {
+      case 'high': return 'bg-red-600 text-white';
+      case 'medium': return 'bg-yellow-600 text-white';
+      case 'low': return 'bg-blue-600 text-white';
+      default: return 'bg-gray-600 text-white';
     }
   };
 
@@ -847,25 +867,57 @@ export default function Home() {
                 </div>
 
                 {report.flags.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
+                    <h3 className="text-2xl font-bold text-slate-900 mb-6 flex items-center">
+                      <svg className="w-6 h-6 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      Issues Detected
+                    </h3>
                     {report.flags.map((flag, index) => (
-                      <div key={index} className={`rounded-xl border-2 overflow-hidden transition-all hover:shadow-lg ${getSeverityColor(flag.message)}`}>
+                      <div key={index} className={`rounded-xl border-2 overflow-hidden transition-all hover:shadow-xl ${getSeverityColor(flag.message)}`}>
                         <div className="p-6">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center">
-                              <span className="text-2xl mr-3">{getSeverityIcon(flag.message)}</span>
-                              <h4 className={`text-lg font-bold ${getSeverityTextColor(flag.message)}`}>
-                                {flag.rule.replace(/_/g, ' ').toUpperCase()}
-                              </h4>
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center flex-1">
+                              <span className="text-3xl mr-4">{getSeverityIcon(flag.message)}</span>
+                              <div className="flex-1">
+                                <h4 className={`text-xl font-bold mb-1 ${getSeverityTextColor(flag.message)}`}>
+                                  {flag.rule.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                </h4>
+                                <p className="text-sm text-slate-600">Rule: {flag.rule}</p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <span className={`text-xs font-bold px-3 py-1 rounded-full ${getSeverityBadgeColor(flag.message)}`}>
+                                {getSeverityLevel(flag.message).toUpperCase()} SEVERITY
+                              </span>
+                              <span className="text-xs font-medium px-2 py-1 rounded bg-slate-200 text-slate-700">
+                                Confidence: HIGH
+                              </span>
                             </div>
                           </div>
-                          <p className={`text-lg mb-4 ${getSeverityTextColor(flag.message)}`}>{flag.message}</p>
+                          
+                          <div className="mb-4">
+                            <p className={`text-lg leading-relaxed ${getSeverityTextColor(flag.message)}`}>{flag.message}</p>
+                          </div>
+
                           <details className="group">
-                            <summary className="cursor-pointer text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors">
-                              View document evidence
+                            <summary className="cursor-pointer flex items-center text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors mb-2">
+                              <svg className="w-4 h-4 mr-2 group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                              📋 View Evidence Found in Document
                             </summary>
-                            <div className="mt-3 p-4 bg-white border border-slate-200 rounded-lg">
-                              <p className="text-sm text-slate-700 font-mono leading-relaxed">{flag.snippet}</p>
+                            <div className="mt-3 p-4 bg-white border border-slate-200 rounded-lg shadow-inner">
+                              <div className="mb-2">
+                                <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Document Evidence:</span>
+                              </div>
+                              <div className="flex items-start">
+                                <span className="w-2 h-2 bg-red-500 rounded-full mr-3 mt-2 flex-shrink-0"></span>
+                                <p className="text-sm text-slate-700 font-mono leading-relaxed bg-slate-50 p-3 rounded border-l-4 border-red-300 flex-1">
+                                  {flag.snippet}
+                                </p>
+                              </div>
                             </div>
                           </details>
                         </div>
