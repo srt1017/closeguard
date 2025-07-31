@@ -114,6 +114,8 @@ class RuleEngine:
             return self._check_compound_rule(rule, text)
         elif rule_type == 'cross_reference_pattern':
             return self._check_cross_reference_pattern(rule, text)
+        elif rule_type == 'regex_presence':
+            return self._check_regex_presence(rule, text)
         else:
             print(f"Unknown rule type: {rule_type}")
             return []
@@ -180,6 +182,28 @@ class RuleEngine:
                 'rule': rule_name,
                 'message': message,
                 'snippet': 'Pattern not found in document'
+            }]
+        
+        return []
+    
+    def _check_regex_presence(self, rule: Dict[str, Any], text: str) -> List[Dict[str, str]]:
+        """Check if a pattern is present in the text."""
+        pattern = rule.get('pattern', '')
+        message = rule.get('message', 'Pattern found in document')
+        rule_name = rule.get('name', 'unknown')
+        
+        # Check if pattern IS found in text
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            # Get surrounding context for snippet
+            start = max(0, match.start() - 50)
+            end = min(len(text), match.end() + 50)
+            snippet = text[start:end].strip()
+            
+            return [{
+                'rule': rule_name,
+                'message': message,
+                'snippet': snippet
             }]
         
         return []
