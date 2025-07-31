@@ -64,6 +64,7 @@ export default function Home() {
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<'context' | 'upload' | 'results'>('context');
+  const [flagVerifications, setFlagVerifications] = useState<Record<string, 'yes' | 'no' | 'unsure'>>({});
   const [userContext, setUserContext] = useState<UserContext>({
     expectedLoanType: 'Not sure',
     promisedZeroClosingCosts: false,
@@ -206,6 +207,47 @@ export default function Home() {
       case 'low': return 'bg-blue-600 text-white';
       default: return 'bg-gray-600 text-white';
     }
+  };
+
+  const handleVerificationResponse = (flagRule: string, response: 'yes' | 'no' | 'unsure') => {
+    setFlagVerifications(prev => ({
+      ...prev,
+      [flagRule]: response
+    }));
+  };
+
+  const generateVerificationQuestion = (flagRule: string, flagMessage: string) => {
+    // Generate context-aware questions based on the rule type and message
+    const questions: Record<string, string> = {
+      'high_closing_costs': 'Were you expecting closing costs this high based on what you were told?',
+      'excessive_origination_percentage': 'Did your lender explain that the origination fee would be this percentage of your loan?',
+      'zero_closing_costs_deception': 'Were you specifically promised that you would pay zero closing costs?',
+      'builder_captive_services': 'Did you choose your own service providers, or were they recommended/required by the builder?',
+      'missing_buyer_representation': 'Did you believe you had your own real estate agent representing your interests?',
+      'loan_type_contradiction': 'Does this loan type match what you applied for and expected?',
+      'fha_mip_on_conventional_loan': 'Were you told this would be a conventional loan without FHA insurance?',
+      'demand_feature_on_purchase_loan': 'Were you informed that the lender could demand full payment at any time?',
+      'extreme_total_interest_percentage': 'Were you aware the total interest would exceed the loan amount?',
+      'purchase_price_mismatch': 'Does this purchase price match what you agreed to pay?',
+      'loan_amount_mismatch': 'Is this the loan amount you expected and applied for?'
+    };
+
+    return questions[flagRule] || 'Does this issue match what happened in your transaction?';
+  };
+
+  const getVerificationButtonStyle = (flagRule: string, responseType: 'yes' | 'no' | 'unsure') => {
+    const userResponse = flagVerifications[flagRule];
+    const isSelected = userResponse === responseType;
+    
+    if (isSelected) {
+      switch (responseType) {
+        case 'yes': return 'bg-red-600 text-white border-red-600';
+        case 'no': return 'bg-green-600 text-white border-green-600';
+        case 'unsure': return 'bg-yellow-600 text-white border-yellow-600';
+      }
+    }
+    
+    return 'bg-white text-slate-700 border-slate-300 hover:border-slate-400';
   };
 
   return (
@@ -920,9 +962,103 @@ export default function Home() {
                               </div>
                             </div>
                           </details>
+
+                          {/* Verification Question Section */}
+                          <div className="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                            <div className="mb-3">
+                              <p className="font-medium text-sm text-blue-800 mb-2">🔍 Verification Question:</p>
+                              <p className="text-sm text-blue-700 mb-4">
+                                {generateVerificationQuestion(flag.rule, flag.message)}
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                              <button 
+                                onClick={() => handleVerificationResponse(flag.rule, 'yes')}
+                                className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${getVerificationButtonStyle(flag.rule, 'yes')}`}
+                              >
+                                ✓ Yes {flagVerifications[flag.rule] === 'yes' && '(Confirms Issue)'}
+                              </button>
+                              <button 
+                                onClick={() => handleVerificationResponse(flag.rule, 'no')}
+                                className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${getVerificationButtonStyle(flag.rule, 'no')}`}
+                              >
+                                ✗ No
+                              </button>
+                              <button 
+                                onClick={() => handleVerificationResponse(flag.rule, 'unsure')}
+                                className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${getVerificationButtonStyle(flag.rule, 'unsure')}`}
+                              >
+                                ? Unsure
+                              </button>
+                            </div>
+                            {flagVerifications[flag.rule] === 'yes' && (
+                              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="text-sm font-medium text-red-800">
+                                  🚨 Issue Confirmed: This indicates a potential violation that may warrant further investigation or legal consultation.
+                                </p>
+                              </div>
+                            )}
+                            {flagVerifications[flag.rule] === 'no' && (
+                              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <p className="text-sm font-medium text-green-800">
+                                  ✅ Issue Dismissed: This appears to be a false positive for your specific situation.
+                                </p>
+                              </div>
+                            )}
+                            {flagVerifications[flag.rule] === 'unsure' && (
+                              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <p className="text-sm font-medium text-yellow-800">
+                                  ⚠️ Needs Review: Consider consulting with a professional to clarify this issue.
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
+
+                    {/* Verification Summary */}
+                    {Object.keys(flagVerifications).length > 0 && (
+                      <div className="mt-8 bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+                        <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
+                          <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Verification Summary
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                            <div className="text-2xl font-bold text-red-600">
+                              {Object.values(flagVerifications).filter(v => v === 'yes').length}
+                            </div>
+                            <div className="text-sm font-medium text-red-700">Confirmed Issues</div>
+                            <div className="text-xs text-red-600 mt-1">Require attention</div>
+                          </div>
+                          <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                            <div className="text-2xl font-bold text-green-600">
+                              {Object.values(flagVerifications).filter(v => v === 'no').length}
+                            </div>
+                            <div className="text-sm font-medium text-green-700">Dismissed Issues</div>
+                            <div className="text-xs text-green-600 mt-1">False positives</div>
+                          </div>
+                          <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <div className="text-2xl font-bold text-yellow-600">
+                              {Object.values(flagVerifications).filter(v => v === 'unsure').length}
+                            </div>
+                            <div className="text-sm font-medium text-yellow-700">Need Review</div>
+                            <div className="text-xs text-yellow-600 mt-1">Consult professional</div>
+                          </div>
+                        </div>
+                        {Object.values(flagVerifications).filter(v => v === 'yes').length > 0 && (
+                          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-sm font-medium text-red-800">
+                              ⚖️ <strong>Legal Recommendation:</strong> You have {Object.values(flagVerifications).filter(v => v === 'yes').length} confirmed issue(s). 
+                              Consider consulting with a real estate fraud attorney to discuss your options for recovery or legal action.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-16">
