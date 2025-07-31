@@ -1,12 +1,14 @@
 import os
 import uuid
 import tempfile
-from typing import Dict, Any
+import json
+from typing import Dict, Any, Optional
 from pathlib import Path
 
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from parser import extract_text
 from engine import RuleEngine
@@ -72,10 +74,35 @@ async def root():
     return {"message": "CloseGuard API is running"}
 
 
+class UserContext(BaseModel):
+    expectedLoanType: str = 'Not sure'
+    expectedInterestRate: Optional[float] = None
+    expectedClosingCosts: Optional[float] = None
+    promisedZeroClosingCosts: bool = False
+    promisedLenderCredit: Optional[float] = None
+    promisedSellerCredit: Optional[float] = None
+    promisedRebate: Optional[float] = None
+    usedBuildersPreferredLender: bool = False
+    builderName: Optional[str] = None
+    builderPromisedToCoverTitleFees: bool = False
+    builderPromisedToCoverEscrowFees: bool = False
+    builderPromisedToCoverInspection: bool = False
+    hadBuyerAgent: bool = False
+    buyerAgentName: Optional[str] = None
+    expectedMortgageInsurance: bool = False
+    expectedMortgageInsuranceAmount: Optional[float] = None
+
 @app.post("/upload")
-async def upload_pdf(file: UploadFile = File(...)):
+async def upload_pdf(
+    file: UploadFile = File(...),
+    context: str = Form(None)
+):
     """
-    Upload a PDF file for analysis.
+    Upload a PDF file for analysis with optional user context.
+    
+    Args:
+        file: PDF file to analyze
+        context: JSON string of user expectations and promises
     
     Returns:
         JSON response with report_id
@@ -105,17 +132,30 @@ async def upload_pdf(file: UploadFile = File(...)):
             if not extracted_text.strip():
                 raise HTTPException(status_code=400, detail="No text could be extracted from the PDF")
             
+            # Parse user context if provided
+            user_context = None
+            if context:
+                try:
+                    context_data = json.loads(context)
+                    user_context = UserContext(**context_data)
+                except (json.JSONDecodeError, TypeError) as e:
+                    print(f"Warning: Failed to parse user context: {e}")
+            
             # Run rule engine analysis
             flags = []
             if rule_engine:
-                flags = rule_engine.check_text(extracted_text)
+                if user_context:
+                    flags = rule_engine.check_text_with_context(extracted_text, user_context.dict())
+                else:
+                    flags = rule_engine.check_text(extracted_text)
             
             # Store report in memory
             reports_store[report_id] = {
                 "status": "done",
                 "flags": flags,
                 "filename": file.filename,
-                "text_length": len(extracted_text)
+                "text_length": len(extracted_text),
+                "user_context": user_context.dict() if user_context else None
             }
             
         finally:

@@ -62,6 +62,41 @@ class RuleEngine:
         
         return flags
     
+    def check_text_with_context(self, text: str, user_context: Dict[str, Any]) -> List[Dict[str, str]]:
+        """
+        Run all rules against the provided text with user context for enhanced analysis.
+        
+        Args:
+            text: The text content to analyze
+            user_context: User's expectations and promises made to them
+            
+        Returns:
+            List of flags, each containing rule name, message, and snippet
+        """
+        flags = []
+        flagged_rules = set()  # Track which rules have already been flagged
+        
+        for rule in self.rules:
+            try:
+                rule_name = rule.get('name', 'unknown')
+                
+                # Skip if this rule has already been flagged
+                if rule_name in flagged_rules:
+                    continue
+                    
+                rule_flags = self._apply_rule_with_context(rule, text, user_context)
+                
+                # If this rule found any flags, add the first one and mark rule as flagged
+                if rule_flags:
+                    flags.append(rule_flags[0])  # Only take the first match
+                    flagged_rules.add(rule_name)
+                    
+            except Exception as e:
+                # Log error but continue with other rules
+                print(f"Error applying rule '{rule.get('name', 'unknown')}' with context: {e}")
+        
+        return flags
+    
     def _apply_rule(self, rule: Dict[str, Any], text: str) -> List[Dict[str, str]]:
         """Apply a single rule to the text and return any flags."""
         rule_type = rule.get('type')
@@ -391,3 +426,87 @@ class RuleEngine:
             }]
         
         return []
+    
+    def _apply_rule_with_context(self, rule: Dict[str, Any], text: str, user_context: Dict[str, Any]) -> List[Dict[str, str]]:
+        """Apply a single rule to the text with user context for enhanced analysis."""
+        rule_type = rule.get('type')
+        rule_name = rule.get('name', 'unknown')
+        
+        # For now, apply regular rules but we'll add context-specific rules later
+        regular_flags = self._apply_rule(rule, text)
+        
+        # Add context-specific logic for certain rules
+        context_flags = self._check_context_specific_rules(rule, text, user_context)
+        
+        # Combine flags
+        all_flags = regular_flags + context_flags
+        return all_flags
+    
+    def _check_context_specific_rules(self, rule: Dict[str, Any], text: str, user_context: Dict[str, Any]) -> List[Dict[str, str]]:
+        """Check for context-specific rule violations."""
+        flags = []
+        rule_name = rule.get('name', 'unknown')
+        
+        # Zero closing costs promise vs reality
+        if rule_name == 'zero_closing_costs_deception' and user_context.get('promisedZeroClosingCosts'):
+            # Enhanced message for users who were specifically promised zero costs
+            import re
+            pattern = r"(?:Total Closing Costs|Closing Costs).*?\$([0-9,]+(?:\.[0-9]{2})?)"
+            matches = re.finditer(pattern, text, re.IGNORECASE)
+            
+            for match in matches:
+                try:
+                    value_str = match.group(1).replace(',', '')
+                    value = float(value_str)
+                    
+                    if value > 500:  # Lower threshold for promised zero costs
+                        start = max(0, match.start() - 50)
+                        end = min(len(text), match.end() + 50)
+                        snippet = text[start:end].strip()
+                        
+                        flags.append({
+                            'rule': rule_name,
+                            'message': f"🚨 BROKEN PROMISE: You were specifically promised ZERO closing costs but are paying ${value_str}",
+                            'snippet': snippet
+                        })
+                        break  # Only flag once
+                        
+                except (ValueError, IndexError):
+                    continue
+        
+        # Builder captive lender detection
+        elif rule_name == 'builder_captive_services' and user_context.get('usedBuildersPreferredLender'):
+            builder_name = user_context.get('builderName', '').upper()
+            if builder_name:
+                # Look for builder name in lender/insurance fields
+                import re
+                
+                # Check lender field
+                lender_match = re.search(r"Lender.*?([A-Z][A-Z\\s]+)", text, re.IGNORECASE)
+                if lender_match:
+                    lender_name = lender_match.group(1).strip().upper()
+                    
+                    # Check if builder name appears in lender name
+                    builder_keywords = set(word for word in builder_name.split() if len(word) > 2)
+                    for keyword in builder_keywords:
+                        if keyword in lender_name:
+                            flags.append({
+                                'rule': rule_name,
+                                'message': f"🚨 CAPTIVE LENDER CONFIRMED: You used {builder_name}'s preferred lender ({lender_name}) - you likely paid inflated rates",
+                                'snippet': f"Builder: {builder_name} | Lender: {lender_name}"
+                            })
+                            break
+        
+        # Missing buyer representation
+        elif rule_name == 'missing_buyer_representation' and user_context.get('hadBuyerAgent'):
+            # User thought they had an agent but document shows N/A
+            import re
+            if re.search(r"Real Estate Broker \(B\).*?N/A", text, re.IGNORECASE):
+                agent_name = user_context.get('buyerAgentName', 'your agent')
+                flags.append({
+                    'rule': rule_name,
+                    'message': f"🚨 REPRESENTATION FRAUD: You thought {agent_name} was your buyer's agent but document shows N/A - you had no independent representation",
+                    'snippet': "Real Estate Broker (B): N/A"
+                })
+        
+        return flags
