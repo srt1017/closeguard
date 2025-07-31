@@ -217,22 +217,22 @@ export default function Home() {
   };
 
   const generateVerificationQuestion = (flagRule: string, flagMessage: string) => {
-    // Generate context-aware questions based on the rule type and message
+    // Generate questions where "No" confirms the issue exists
     const questions: Record<string, string> = {
-      'high_closing_costs': 'Were you expecting closing costs this high based on what you were told?',
-      'excessive_origination_percentage': 'Did your lender explain that the origination fee would be this percentage of your loan?',
-      'zero_closing_costs_deception': 'Were you specifically promised that you would pay zero closing costs?',
-      'builder_captive_services': 'Did you choose your own service providers, or were they recommended/required by the builder?',
-      'missing_buyer_representation': 'Did you believe you had your own real estate agent representing your interests?',
-      'loan_type_contradiction': 'Does this loan type match what you applied for and expected?',
-      'fha_mip_on_conventional_loan': 'Were you told this would be a conventional loan without FHA insurance?',
-      'demand_feature_on_purchase_loan': 'Were you informed that the lender could demand full payment at any time?',
-      'extreme_total_interest_percentage': 'Were you aware the total interest would exceed the loan amount?',
-      'purchase_price_mismatch': 'Does this purchase price match what you agreed to pay?',
-      'loan_amount_mismatch': 'Is this the loan amount you expected and applied for?'
+      'high_closing_costs': 'Were you told your closing costs would be this high?',
+      'excessive_origination_percentage': 'Did your lender clearly explain this origination fee percentage upfront?',
+      'zero_closing_costs_deception': 'Did you actually receive zero closing costs as promised?',
+      'builder_captive_services': 'Were you given a choice of service providers, or required to use builder-recommended ones?',
+      'missing_buyer_representation': 'Did you have independent buyer agent representation throughout the transaction?',
+      'loan_type_contradiction': 'Does this loan type match exactly what you applied for?',
+      'fha_mip_on_conventional_loan': 'Should you be paying FHA insurance on this conventional loan?',
+      'demand_feature_on_purchase_loan': 'Should your lender be able to demand full payment at any time?',
+      'extreme_total_interest_percentage': 'Did you understand you would pay more in interest than the loan amount?',
+      'purchase_price_mismatch': 'Is this the exact purchase price you agreed to pay?',
+      'loan_amount_mismatch': 'Is this the exact loan amount you expected and applied for?'
     };
 
-    return questions[flagRule] || 'Does this issue match what happened in your transaction?';
+    return questions[flagRule] || 'Is this how your transaction should have worked?';
   };
 
   const getVerificationButtonStyle = (flagRule: string, responseType: 'yes' | 'no' | 'unsure') => {
@@ -241,8 +241,8 @@ export default function Home() {
     
     if (isSelected) {
       switch (responseType) {
-        case 'yes': return 'bg-red-600 text-white border-red-600';
-        case 'no': return 'bg-green-600 text-white border-green-600';
+        case 'yes': return 'bg-green-600 text-white border-green-600';  // Yes = good (dismisses issue)
+        case 'no': return 'bg-red-600 text-white border-red-600';       // No = problem (confirms issue)
         case 'unsure': return 'bg-yellow-600 text-white border-yellow-600';
       }
     }
@@ -976,13 +976,13 @@ export default function Home() {
                                 onClick={() => handleVerificationResponse(flag.rule, 'yes')}
                                 className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${getVerificationButtonStyle(flag.rule, 'yes')}`}
                               >
-                                ✓ Yes {flagVerifications[flag.rule] === 'yes' && '(Confirms Issue)'}
+                                ✓ Yes {flagVerifications[flag.rule] === 'yes' && '(Dismisses Issue)'}
                               </button>
                               <button 
                                 onClick={() => handleVerificationResponse(flag.rule, 'no')}
                                 className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${getVerificationButtonStyle(flag.rule, 'no')}`}
                               >
-                                ✗ No
+                                ✗ No {flagVerifications[flag.rule] === 'no' && '(Confirms Issue)'}
                               </button>
                               <button 
                                 onClick={() => handleVerificationResponse(flag.rule, 'unsure')}
@@ -991,14 +991,14 @@ export default function Home() {
                                 ? Unsure
                               </button>
                             </div>
-                            {flagVerifications[flag.rule] === 'yes' && (
+                            {flagVerifications[flag.rule] === 'no' && (
                               <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                                 <p className="text-sm font-medium text-red-800">
                                   🚨 Issue Confirmed: This indicates a potential violation that may warrant further investigation or legal consultation.
                                 </p>
                               </div>
                             )}
-                            {flagVerifications[flag.rule] === 'no' && (
+                            {flagVerifications[flag.rule] === 'yes' && (
                               <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                                 <p className="text-sm font-medium text-green-800">
                                   ✅ Issue Dismissed: This appears to be a false positive for your specific situation.
@@ -1029,14 +1029,14 @@ export default function Home() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
                             <div className="text-2xl font-bold text-red-600">
-                              {Object.values(flagVerifications).filter(v => v === 'yes').length}
+                              {Object.values(flagVerifications).filter(v => v === 'no').length}
                             </div>
                             <div className="text-sm font-medium text-red-700">Confirmed Issues</div>
                             <div className="text-xs text-red-600 mt-1">Require attention</div>
                           </div>
                           <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
                             <div className="text-2xl font-bold text-green-600">
-                              {Object.values(flagVerifications).filter(v => v === 'no').length}
+                              {Object.values(flagVerifications).filter(v => v === 'yes').length}
                             </div>
                             <div className="text-sm font-medium text-green-700">Dismissed Issues</div>
                             <div className="text-xs text-green-600 mt-1">False positives</div>
@@ -1049,10 +1049,10 @@ export default function Home() {
                             <div className="text-xs text-yellow-600 mt-1">Consult professional</div>
                           </div>
                         </div>
-                        {Object.values(flagVerifications).filter(v => v === 'yes').length > 0 && (
+                        {Object.values(flagVerifications).filter(v => v === 'no').length > 0 && (
                           <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
                             <p className="text-sm font-medium text-red-800">
-                              ⚖️ <strong>Legal Recommendation:</strong> You have {Object.values(flagVerifications).filter(v => v === 'yes').length} confirmed issue(s). 
+                              ⚖️ <strong>Legal Recommendation:</strong> You have {Object.values(flagVerifications).filter(v => v === 'no').length} confirmed issue(s). 
                               Consider consulting with a real estate fraud attorney to discuss your options for recovery or legal action.
                             </p>
                           </div>
