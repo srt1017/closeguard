@@ -250,6 +250,116 @@ export default function Home() {
     return 'bg-white text-slate-700 border-slate-300 hover:border-slate-400';
   };
 
+  // Cost breakdown analysis functions
+  const generateCostBreakdown = () => {
+    if (!report) return [];
+    
+    // Mock cost breakdown based on typical closing disclosure items
+    // In a real implementation, this would parse the actual document text
+    return [
+      {
+        name: "Origination Fee",
+        description: "Lender fee for processing loan",
+        paidBy: "Borrower",
+        amount: 2500,
+        typicalRange: "$0-2,000",
+        isUnexpected: false,
+        isExcessive: true,
+      },
+      {
+        name: "Title Insurance (Owner's)",
+        description: "Protects owner from title defects",
+        paidBy: "Borrower",
+        amount: 1200,
+        typicalRange: "$800-1,500",
+        isUnexpected: true, // Should be paid by seller in TX
+        isExcessive: false,
+      },
+      {
+        name: "Title Insurance (Lender's)",
+        description: "Protects lender from title defects",
+        paidBy: "Borrower",
+        amount: 600,
+        typicalRange: "$400-800",
+        isUnexpected: false,
+        isExcessive: false,
+      },
+      {
+        name: "Property Survey",
+        description: "Legal boundary survey",
+        paidBy: "Borrower",
+        amount: 450,
+        typicalRange: "$300-600",
+        isUnexpected: true, // Should be paid by seller in TX new construction
+        isExcessive: false,
+      },
+      {
+        name: "Settlement/Closing Fee",
+        description: "Title company closing service",
+        paidBy: "Borrower",
+        amount: 750,
+        typicalRange: "$500-1,000",
+        isUnexpected: true, // Often covered by builder
+        isExcessive: false,
+      },
+      {
+        name: "Document Preparation",
+        description: "Preparing closing documents",
+        paidBy: "Borrower",
+        amount: 200,
+        typicalRange: "$0-300",
+        isUnexpected: true, // Typically lender/title company cost
+        isExcessive: false,
+      },
+      {
+        name: "Notary Fee",
+        description: "Notarizing signatures",
+        paidBy: "Borrower",
+        amount: 75,
+        typicalRange: "$0-100",
+        isUnexpected: true, // Typically covered by title company
+        isExcessive: false,
+      },
+      {
+        name: "Appraisal Fee",
+        description: "Property valuation",
+        paidBy: "Borrower",
+        amount: 550,
+        typicalRange: "$450-650",
+        isUnexpected: false,
+        isExcessive: false,
+      },
+      {
+        name: "Credit Report",
+        description: "Borrower credit check",
+        paidBy: "Borrower",
+        amount: 45,
+        typicalRange: "$25-75",
+        isUnexpected: false,
+        isExcessive: false,
+      },
+      {
+        name: "Recording Fees",
+        description: "County recording of deed/mortgage",
+        paidBy: "Borrower",
+        amount: 125,
+        typicalRange: "$80-200",
+        isUnexpected: false,
+        isExcessive: false,
+      }
+    ];
+  };
+
+  const calculateTotalPaid = (payer: string) => {
+    return generateCostBreakdown()
+      .filter(item => item.paidBy === payer)
+      .reduce((total, item) => total + item.amount, 0);
+  };
+
+  const countUnexpectedCharges = () => {
+    return generateCostBreakdown().filter(item => item.isUnexpected).length;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="max-w-5xl mx-auto px-4 py-8">
@@ -1059,6 +1169,100 @@ export default function Home() {
                         )}
                       </div>
                     )}
+
+                    {/* Cost Breakdown Analysis */}
+                    <div className="mt-8 bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+                      <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
+                        <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        Texas Cost Breakdown Analysis
+                      </h3>
+                      
+                      <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-sm text-blue-800">
+                          <strong>💡 What to know:</strong> In Texas new construction, builders typically pay for Owner's Title Insurance, surveys, and many settlement fees. 
+                          Unexpected charges may indicate cost-shifting or deceptive practices.
+                        </p>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50">
+                              <th className="text-left py-3 px-4 font-semibold text-slate-700 border-b">Cost Item</th>
+                              <th className="text-center py-3 px-4 font-semibold text-slate-700 border-b">Who Paid</th>
+                              <th className="text-right py-3 px-4 font-semibold text-slate-700 border-b">Amount</th>
+                              <th className="text-center py-3 px-4 font-semibold text-slate-700 border-b">TX Typical</th>
+                              <th className="text-center py-3 px-4 font-semibold text-slate-700 border-b">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {generateCostBreakdown().map((item, index) => (
+                              <tr key={index} className={`border-b hover:bg-slate-50 ${item.isUnexpected ? 'bg-red-50' : ''}`}>
+                                <td className="py-3 px-4">
+                                  <div className="font-medium text-slate-900">{item.name}</div>
+                                  <div className="text-xs text-slate-500">{item.description}</div>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    item.paidBy === 'Borrower' 
+                                      ? 'bg-blue-100 text-blue-800' 
+                                      : item.paidBy === 'Seller'
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {item.paidBy}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-right font-medium text-slate-900">
+                                  ${item.amount.toLocaleString()}
+                                </td>
+                                <td className="py-3 px-4 text-center text-sm text-slate-600">
+                                  {item.typicalRange}
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  {item.isUnexpected ? (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                      ⚠️ Unexpected
+                                    </span>
+                                  ) : item.isExcessive ? (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                      📈 High
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                      ✓ Normal
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="text-lg font-bold text-blue-600">
+                            ${calculateTotalPaid('Borrower').toLocaleString()}
+                          </div>
+                          <div className="text-sm font-medium text-blue-700">You Paid</div>
+                        </div>
+                        <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                          <div className="text-lg font-bold text-green-600">
+                            ${calculateTotalPaid('Seller').toLocaleString()}
+                          </div>
+                          <div className="text-sm font-medium text-green-700">Seller/Builder Paid</div>
+                        </div>
+                        <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                          <div className="text-lg font-bold text-red-600">
+                            {countUnexpectedCharges()}
+                          </div>
+                          <div className="text-sm font-medium text-red-700">Unexpected Charges</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-16">

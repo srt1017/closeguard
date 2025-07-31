@@ -185,3 +185,49 @@ rules:
     pattern: "Loan Amount.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
     tolerance_percentage: 1.0
     message: "🚨 LOAN AMOUNT MISMATCH: Expected ${expected} but document shows ${actual} ({difference} difference)"
+
+  # Unexpected borrower-paid items (should be paid by seller/builder in TX new construction)
+  - name: "buyer_paying_title_insurance"
+    type: "regex_presence"
+    pattern: "Owner's Title Insurance.*?Borrower.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    message: "⚠️ UNEXPECTED CHARGE: You're paying for Owner's Title Insurance (${1}) - typically paid by seller in TX"
+
+  - name: "buyer_paying_survey_fee"
+    type: "regex_presence"
+    pattern: "Survey.*?Borrower.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    message: "⚠️ UNEXPECTED CHARGE: You're paying for property survey (${1}) - typically paid by seller in TX new construction"
+
+  - name: "buyer_paying_settlement_fee"
+    type: "regex_presence"
+    pattern: "Settlement.*?Borrower.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    message: "⚠️ UNEXPECTED CHARGE: You're paying settlement fee (${1}) - often covered by builder in TX"
+
+  - name: "buyer_paying_doc_prep"
+    type: "regex_presence"
+    pattern: "Document Preparation.*?Borrower.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    message: "⚠️ UNEXPECTED CHARGE: You're paying document prep fee (${1}) - typically lender/title company cost"
+
+  - name: "buyer_paying_notary_fee"
+    type: "regex_presence"
+    pattern: "Notary.*?Borrower.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    message: "⚠️ UNEXPECTED CHARGE: You're paying notary fee (${1}) - typically covered by title company"
+
+  - name: "buyer_paying_courier_fee"
+    type: "regex_presence"
+    pattern: "Courier.*?Borrower.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    message: "⚠️ UNEXPECTED CHARGE: You're paying courier fee (${1}) - typically title company responsibility"
+
+  - name: "excessive_title_fees"
+    type: "numeric_threshold"
+    pattern: "Title.*?Borrower.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    threshold: 2000
+    operator: ">"
+    message: "🚨 EXCESSIVE TITLE FEES: You're paying ${value} in title fees - typical TX range is $1,200-$1,800"
+
+  - name: "excessive_lender_fees"
+    type: "calculated_percentage"
+    numerator_pattern: "(?:Processing|Underwriting|Administration).*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    denominator_pattern: "Loan Amount.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    threshold: 0.5
+    operator: ">"
+    message: "⚠️ HIGH LENDER FEES: Processing/admin fees are {percentage}% of loan - typical range is 0.1-0.3%"
