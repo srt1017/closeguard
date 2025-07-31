@@ -17,11 +17,52 @@ interface Report {
   };
 }
 
+interface UserContext {
+  // Basic loan expectations
+  expectedLoanType: 'FHA' | 'Conventional' | 'VA' | 'USDA' | 'Not sure';
+  expectedInterestRate?: number;
+  expectedClosingCosts?: number;
+  
+  // Promises made by builder/lender
+  promisedZeroClosingCosts: boolean;
+  promisedLenderCredit?: number;
+  promisedSellerCredit?: number;
+  promisedRebate?: number;
+  
+  // Builder/lender relationships
+  usedBuildersPreferredLender: boolean;
+  builderName?: string;
+  
+  // Specific promises about fees
+  builderPromisedToCoverTitleFees: boolean;
+  builderPromisedToCoverEscrowFees: boolean;
+  builderPromisedToCoverInspection: boolean;
+  
+  // Representation
+  hadBuyerAgent: boolean;
+  buyerAgentName?: string;
+  
+  // Mortgage insurance expectations
+  expectedMortgageInsurance: boolean;
+  expectedMortgageInsuranceAmount?: number;
+}
+
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState<'context' | 'upload' | 'results'>('context');
+  const [userContext, setUserContext] = useState<UserContext>({
+    expectedLoanType: 'Not sure',
+    promisedZeroClosingCosts: false,
+    usedBuildersPreferredLender: false,
+    builderPromisedToCoverTitleFees: false,
+    builderPromisedToCoverEscrowFees: false,
+    builderPromisedToCoverInspection: false,
+    hadBuyerAgent: false,
+    expectedMortgageInsurance: false,
+  });
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -42,9 +83,10 @@ export default function Home() {
     setReport(null);
 
     try {
-      // Upload PDF
+      // Upload PDF with context
       const formData = new FormData();
       formData.append('file', selectedFile);
+      formData.append('context', JSON.stringify(userContext));
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
       
@@ -69,11 +111,22 @@ export default function Home() {
 
       const reportData = await reportResponse.json();
       setReport(reportData);
+      setCurrentStep('results');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleContextSubmit = () => {
+    setCurrentStep('upload');
+  };
+
+  const handleBackToContext = () => {
+    setCurrentStep('context');
+    setReport(null);
+    setSelectedFile(null);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -107,9 +160,260 @@ export default function Home() {
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-8">
-          {/* Upload Section */}
+          {/* Progress Indicator */}
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-6">Upload PDF Document</h2>
+            <div className="flex items-center justify-between">
+              <div className={`flex items-center ${currentStep === 'context' ? 'text-blue-600' : currentStep === 'upload' || currentStep === 'results' ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === 'context' ? 'bg-blue-600 text-white' : currentStep === 'upload' || currentStep === 'results' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
+                  1
+                </div>
+                <span className="ml-2 text-sm font-medium">Your Situation</span>
+              </div>
+              <div className={`flex items-center ${currentStep === 'upload' ? 'text-blue-600' : currentStep === 'results' ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === 'upload' ? 'bg-blue-600 text-white' : currentStep === 'results' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
+                  2
+                </div>
+                <span className="ml-2 text-sm font-medium">Upload Document</span>
+              </div>
+              <div className={`flex items-center ${currentStep === 'results' ? 'text-blue-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === 'results' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+                  3
+                </div>
+                <span className="ml-2 text-sm font-medium">Analysis Results</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Context Form */}
+          {currentStep === 'context' && (
+            <div>
+              <h2 className="text-2xl font-semibold mb-6">Tell us about your loan expectations</h2>
+              <p className="text-gray-600 mb-8">Help us provide more accurate analysis by answering these questions about what you were promised.</p>
+              
+              <div className="space-y-8">
+                {/* Loan Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    What type of loan were you expecting?
+                  </label>
+                  <div className="space-y-2">
+                    {(['FHA', 'Conventional', 'VA', 'USDA', 'Not sure'] as const).map((type) => (
+                      <label key={type} className="flex items-center">
+                        <input
+                          type="radio"
+                          name="loanType"
+                          value={type}
+                          checked={userContext.expectedLoanType === type}
+                          onChange={(e) => setUserContext({...userContext, expectedLoanType: e.target.value as any})}
+                          className="mr-3 text-blue-600"
+                        />
+                        <span className="text-gray-700">{type} Loan</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cost Promises */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Were you promised any of the following?
+                  </label>
+                  <div className="space-y-3">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={userContext.promisedZeroClosingCosts}
+                        onChange={(e) => setUserContext({...userContext, promisedZeroClosingCosts: e.target.checked})}
+                        className="mr-3 text-blue-600"
+                      />
+                      <span className="text-gray-700">Zero closing costs</span>
+                    </label>
+                    
+                    <div className="ml-6 space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm text-gray-600">Lender credit: $</label>
+                        <input
+                          type="number"
+                          value={userContext.promisedLenderCredit || ''}
+                          onChange={(e) => setUserContext({...userContext, promisedLenderCredit: e.target.value ? Number(e.target.value) : undefined})}
+                          className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm text-gray-600">Seller credit: $</label>
+                        <input
+                          type="number"
+                          value={userContext.promisedSellerCredit || ''}
+                          onChange={(e) => setUserContext({...userContext, promisedSellerCredit: e.target.value ? Number(e.target.value) : undefined})}
+                          className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm text-gray-600">Builder rebate: $</label>
+                        <input
+                          type="number"
+                          value={userContext.promisedRebate || ''}
+                          onChange={(e) => setUserContext({...userContext, promisedRebate: e.target.value ? Number(e.target.value) : undefined})}
+                          className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Builder Relationship */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Did you use the builder's preferred/recommended lender?
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="builderLender"
+                        value="yes"
+                        checked={userContext.usedBuildersPreferredLender}
+                        onChange={(e) => setUserContext({...userContext, usedBuildersPreferredLender: true})}
+                        className="mr-3 text-blue-600"
+                      />
+                      <span className="text-gray-700">Yes</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="builderLender"
+                        value="no"
+                        checked={!userContext.usedBuildersPreferredLender}
+                        onChange={(e) => setUserContext({...userContext, usedBuildersPreferredLender: false})}
+                        className="mr-3 text-blue-600"
+                      />
+                      <span className="text-gray-700">No</span>
+                    </label>
+                  </div>
+                  
+                  {userContext.usedBuildersPreferredLender && (
+                    <div className="mt-3">
+                      <label className="block text-sm text-gray-600 mb-1">Builder name:</label>
+                      <input
+                        type="text"
+                        value={userContext.builderName || ''}
+                        onChange={(e) => setUserContext({...userContext, builderName: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded"
+                        placeholder="e.g., LGI Homes, D.R. Horton, etc."
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Builder Promises */}
+                {userContext.usedBuildersPreferredLender && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Did the builder promise to cover any of these fees?
+                    </label>
+                    <div className="space-y-2">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={userContext.builderPromisedToCoverTitleFees}
+                          onChange={(e) => setUserContext({...userContext, builderPromisedToCoverTitleFees: e.target.checked})}
+                          className="mr-3 text-blue-600"
+                        />
+                        <span className="text-gray-700">Title insurance fees</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={userContext.builderPromisedToCoverEscrowFees}
+                          onChange={(e) => setUserContext({...userContext, builderPromisedToCoverEscrowFees: e.target.checked})}
+                          className="mr-3 text-blue-600"
+                        />
+                        <span className="text-gray-700">Escrow/settlement fees</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={userContext.builderPromisedToCoverInspection}
+                          onChange={(e) => setUserContext({...userContext, builderPromisedToCoverInspection: e.target.checked})}
+                          className="mr-3 text-blue-600"
+                        />
+                        <span className="text-gray-700">Home inspection fees</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Buyer Representation */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Did you have your own buyer's agent/realtor?
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="buyerAgent"
+                        value="yes"
+                        checked={userContext.hadBuyerAgent}
+                        onChange={(e) => setUserContext({...userContext, hadBuyerAgent: true})}
+                        className="mr-3 text-blue-600"
+                      />
+                      <span className="text-gray-700">Yes</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="buyerAgent"
+                        value="no"
+                        checked={!userContext.hadBuyerAgent}
+                        onChange={(e) => setUserContext({...userContext, hadBuyerAgent: false})}
+                        className="mr-3 text-blue-600"
+                      />
+                      <span className="text-gray-700">No</span>
+                    </label>
+                  </div>
+                  
+                  {userContext.hadBuyerAgent && (
+                    <div className="mt-3">
+                      <label className="block text-sm text-gray-600 mb-1">Agent name:</label>
+                      <input
+                        type="text"
+                        value={userContext.buyerAgentName || ''}
+                        onChange={(e) => setUserContext({...userContext, buyerAgentName: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded"
+                        placeholder="Your buyer's agent name"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-8">
+                <button
+                  onClick={handleContextSubmit}
+                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Continue to Upload
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Upload Section */}
+          {currentStep === 'upload' && (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-semibold">Upload PDF Document</h2>
+                <button
+                  onClick={handleBackToContext}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  ← Edit your situation
+                </button>
+              </div>
             
             <div
               className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors"
@@ -166,8 +470,10 @@ export default function Home() {
             </div>
           </div>
 
+          )}
+
           {/* Results Section */}
-          {report && (
+          {currentStep === 'results' && report && (
             <div className="border-t pt-8">
               <h2 className="text-2xl font-semibold mb-6">Analysis Results</h2>
               
