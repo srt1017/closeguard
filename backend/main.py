@@ -91,6 +91,8 @@ class UserContext(BaseModel):
     buyerAgentName: Optional[str] = None
     expectedMortgageInsurance: bool = False
     expectedMortgageInsuranceAmount: Optional[float] = None
+    expectedPurchasePrice: Optional[float] = None
+    expectedLoanAmount: Optional[float] = None
 
 @app.post("/upload")
 async def upload_pdf(

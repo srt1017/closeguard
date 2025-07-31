@@ -116,6 +116,8 @@ class RuleEngine:
             return self._check_cross_reference_pattern(rule, text)
         elif rule_type == 'regex_presence':
             return self._check_regex_presence(rule, text)
+        elif rule_type == 'context_comparison':
+            return self._check_context_comparison(rule, text)
         else:
             print(f"Unknown rule type: {rule_type}")
             return []
@@ -451,12 +453,92 @@ class RuleEngine:
         
         return []
     
+    def _check_context_comparison(self, rule: Dict[str, Any], text: str) -> List[Dict[str, str]]:
+        """Check context-based comparisons (only works with context)."""
+        # This rule type only works with context, so return empty for regular analysis
+        return []
+    
+    def _check_context_comparison_with_context(self, rule: Dict[str, Any], text: str, user_context: Dict[str, Any]) -> List[Dict[str, str]]:
+        """Check context-based comparisons with user expectations."""
+        flags = []
+        rule_name = rule.get('name', 'unknown')
+        comparison_type = rule.get('comparison_type', '')
+        pattern = rule.get('pattern', '')
+        message = rule.get('message', 'Context comparison failed')
+        tolerance_percentage = rule.get('tolerance_percentage', 5.0)  # Default 5% tolerance
+        
+        if comparison_type == 'purchase_price':
+            expected_price = user_context.get('expectedPurchasePrice')
+            if expected_price:
+                # Extract actual purchase price from document
+                import re
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    try:
+                        actual_price_str = match.group(1).replace(',', '')
+                        actual_price = float(actual_price_str)
+                        
+                        # Calculate percentage difference
+                        difference = abs(actual_price - expected_price)
+                        percentage_diff = (difference / expected_price) * 100
+                        
+                        if percentage_diff > tolerance_percentage:
+                            start = max(0, match.start() - 50)
+                            end = min(len(text), match.end() + 50)
+                            snippet = text[start:end].strip()
+                            
+                            formatted_message = message.replace('{expected}', f'${expected_price:,.2f}').replace('{actual}', f'${actual_price:,.2f}').replace('{difference}', f'{percentage_diff:.1f}%')
+                            
+                            flags.append({
+                                'rule': rule_name,
+                                'message': formatted_message,
+                                'snippet': snippet
+                            })
+                    except (ValueError, IndexError) as e:
+                        print(f"Error processing purchase price comparison in rule '{rule_name}': {e}")
+        
+        elif comparison_type == 'loan_amount':
+            expected_amount = user_context.get('expectedLoanAmount')
+            if expected_amount:
+                # Extract actual loan amount from document
+                import re
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    try:
+                        actual_amount_str = match.group(1).replace(',', '')
+                        actual_amount = float(actual_amount_str)
+                        
+                        # Calculate percentage difference
+                        difference = abs(actual_amount - expected_amount)
+                        percentage_diff = (difference / expected_amount) * 100
+                        
+                        if percentage_diff > tolerance_percentage:
+                            start = max(0, match.start() - 50)
+                            end = min(len(text), match.end() + 50)
+                            snippet = text[start:end].strip()
+                            
+                            formatted_message = message.replace('{expected}', f'${expected_amount:,.2f}').replace('{actual}', f'${actual_amount:,.2f}').replace('{difference}', f'{percentage_diff:.1f}%')
+                            
+                            flags.append({
+                                'rule': rule_name,
+                                'message': formatted_message,
+                                'snippet': snippet
+                            })
+                    except (ValueError, IndexError) as e:
+                        print(f"Error processing loan amount comparison in rule '{rule_name}': {e}")
+        
+        return flags
+    
     def _apply_rule_with_context(self, rule: Dict[str, Any], text: str, user_context: Dict[str, Any]) -> List[Dict[str, str]]:
         """Apply a single rule to the text with user context for enhanced analysis."""
         rule_type = rule.get('type')
         rule_name = rule.get('name', 'unknown')
         
-        # For now, apply regular rules but we'll add context-specific rules later
+        # Handle context-specific rule types
+        if rule_type == 'context_comparison':
+            return self._check_context_comparison_with_context(rule, text, user_context)
+        
+        # For regular rules, apply them normally
         regular_flags = self._apply_rule(rule, text)
         
         # Add context-specific logic for certain rules

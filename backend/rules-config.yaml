@@ -169,3 +169,18 @@ rules:
         operator: ">="
         value_name: "apr"
     message: "⚠️ HIGH FEES: APR ({apr}%) significantly higher than interest rate ({rate}%) indicates expensive loan costs and fees"
+
+  # Purchase price and loan amount verification rules
+  - name: "purchase_price_mismatch"
+    type: "context_comparison"
+    comparison_type: "purchase_price"
+    pattern: "(?:Purchase Price|Sale Price).*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    tolerance_percentage: 1.0
+    message: "🚨 PRICE MISMATCH: Expected ${expected} but document shows ${actual} ({difference} difference)"
+
+  - name: "loan_amount_mismatch"
+    type: "context_comparison"
+    comparison_type: "loan_amount"
+    pattern: "Loan Amount.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    tolerance_percentage: 1.0
+    message: "🚨 LOAN AMOUNT MISMATCH: Expected ${expected} but document shows ${actual} ({difference} difference)"

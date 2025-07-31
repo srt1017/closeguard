@@ -23,6 +23,10 @@ interface UserContext {
   expectedInterestRate?: number;
   expectedClosingCosts?: number;
   
+  // Purchase details
+  expectedPurchasePrice?: number;
+  expectedLoanAmount?: number;
+  
   // Promises made by builder/lender
   promisedZeroClosingCosts: boolean;
   promisedLenderCredit?: number;
@@ -147,380 +151,619 @@ export default function Home() {
     }
   };
 
+  const getSeverityIcon = (message: string) => {
+    if (message.includes('🚨') || message.includes('CRITICAL') || message.includes('ERROR') || message.includes('FRAUD')) {
+      return '🚨';
+    } else if (message.includes('⚠️') || message.includes('WARNING') || message.includes('DANGEROUS')) {
+      return '⚠️';
+    } else {
+      return 'ℹ️';
+    }
+  };
+
+  const getSeverityColor = (message: string) => {
+    if (message.includes('🚨') || message.includes('CRITICAL') || message.includes('ERROR') || message.includes('FRAUD')) {
+      return 'border-red-200 bg-red-50';
+    } else if (message.includes('⚠️') || message.includes('WARNING') || message.includes('DANGEROUS')) {
+      return 'border-amber-200 bg-amber-50';
+    } else {
+      return 'border-blue-200 bg-blue-50';
+    }
+  };
+
+  const getSeverityTextColor = (message: string) => {
+    if (message.includes('🚨') || message.includes('CRITICAL') || message.includes('ERROR') || message.includes('FRAUD')) {
+      return 'text-red-900';
+    } else if (message.includes('⚠️') || message.includes('WARNING') || message.includes('DANGEROUS')) {
+      return 'text-amber-900';
+    } else {
+      return 'text-blue-900';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 py-12">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 mb-6">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <h1 className="text-5xl font-bold text-slate-900 mb-4">
             CloseGuard
           </h1>
-          <p className="text-xl text-gray-600">
-            AI-powered analysis for home closing documents
+          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+            AI-powered protection against predatory lending and closing document fraud
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
           {/* Progress Indicator */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div className={`flex items-center ${currentStep === 'context' ? 'text-blue-600' : currentStep === 'upload' || currentStep === 'results' ? 'text-green-600' : 'text-gray-400'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === 'context' ? 'bg-blue-600 text-white' : currentStep === 'upload' || currentStep === 'results' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
-                  1
+          <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-8 py-6 border-b border-slate-200">
+            <div className="flex items-center justify-between max-w-md mx-auto">
+              <div className="flex items-center">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                  currentStep === 'context' 
+                    ? 'bg-blue-600 text-white shadow-lg scale-110' 
+                    : (currentStep === 'upload' || currentStep === 'results') 
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-slate-200 text-slate-500'
+                }`}>
+                  {(currentStep === 'upload' || currentStep === 'results') ? '✓' : '1'}
                 </div>
-                <span className="ml-2 text-sm font-medium">Your Situation</span>
-              </div>
-              <div className={`flex items-center ${currentStep === 'upload' ? 'text-blue-600' : currentStep === 'results' ? 'text-green-600' : 'text-gray-400'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === 'upload' ? 'bg-blue-600 text-white' : currentStep === 'results' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
-                  2
+                <div className="ml-3">
+                  <div className={`text-sm font-medium transition-colors ${
+                    currentStep === 'context' ? 'text-blue-600' : 
+                    (currentStep === 'upload' || currentStep === 'results') ? 'text-green-600' : 'text-slate-400'
+                  }`}>Your Details</div>
                 </div>
-                <span className="ml-2 text-sm font-medium">Upload Document</span>
               </div>
-              <div className={`flex items-center ${currentStep === 'results' ? 'text-blue-600' : 'text-gray-400'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === 'results' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+              
+              <div className={`w-16 h-0.5 transition-colors ${
+                (currentStep === 'upload' || currentStep === 'results') ? 'bg-green-500' : 'bg-slate-200'
+              }`}></div>
+              
+              <div className="flex items-center">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                  currentStep === 'upload' 
+                    ? 'bg-blue-600 text-white shadow-lg scale-110' 
+                    : currentStep === 'results' 
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-slate-200 text-slate-500'
+                }`}>
+                  {currentStep === 'results' ? '✓' : '2'}
+                </div>
+                <div className="ml-3">
+                  <div className={`text-sm font-medium transition-colors ${
+                    currentStep === 'upload' ? 'text-blue-600' : 
+                    currentStep === 'results' ? 'text-green-600' : 'text-slate-400'
+                  }`}>Upload & Analyze</div>
+                </div>
+              </div>
+              
+              <div className={`w-16 h-0.5 transition-colors ${
+                currentStep === 'results' ? 'bg-green-500' : 'bg-slate-200'
+              }`}></div>
+              
+              <div className="flex items-center">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                  currentStep === 'results' 
+                    ? 'bg-blue-600 text-white shadow-lg scale-110' 
+                    : 'bg-slate-200 text-slate-500'
+                }`}>
                   3
                 </div>
-                <span className="ml-2 text-sm font-medium">Analysis Results</span>
+                <div className="ml-3">
+                  <div className={`text-sm font-medium transition-colors ${
+                    currentStep === 'results' ? 'text-blue-600' : 'text-slate-400'
+                  }`}>Results</div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Context Form */}
-          {currentStep === 'context' && (
-            <div>
-              <h2 className="text-2xl font-semibold mb-6">Tell us about your loan expectations</h2>
-              <p className="text-gray-600 mb-8">Help us provide more accurate analysis by answering these questions about what you were promised.</p>
-              
-              <div className="space-y-8">
-                {/* Loan Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    What type of loan were you expecting?
-                  </label>
-                  <div className="space-y-2">
-                    {(['FHA', 'Conventional', 'VA', 'USDA', 'Not sure'] as const).map((type) => (
-                      <label key={type} className="flex items-center">
+          <div className="p-8">
+            {/* Context Form */}
+            {currentStep === 'context' && (
+              <div className="animate-in slide-in-from-left duration-300">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-slate-900 mb-3">Tell us about your situation</h2>
+                  <p className="text-lg text-slate-600 max-w-2xl mx-auto">Help us catch any deceptions by sharing what you were promised and expected.</p>
+                </div>
+
+                <div className="grid gap-8">
+                  {/* Purchase Details Card */}
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                    <h3 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
+                      <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                      Purchase Details
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          Expected Purchase Price
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span className="text-slate-500 text-sm">$</span>
+                          </div>
+                          <input
+                            type="number"
+                            value={userContext.expectedPurchasePrice || ''}
+                            onChange={(e) => setUserContext({...userContext, expectedPurchasePrice: e.target.value ? Number(e.target.value) : undefined})}
+                            className="block w-full pl-7 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            placeholder="400000"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          Expected Loan Amount
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span className="text-slate-500 text-sm">$</span>
+                          </div>
+                          <input
+                            type="number"
+                            value={userContext.expectedLoanAmount || ''}
+                            onChange={(e) => setUserContext({...userContext, expectedLoanAmount: e.target.value ? Number(e.target.value) : undefined})}
+                            className="block w-full pl-7 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            placeholder="320000"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Loan Type Card */}
+                  <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border border-slate-200">
+                    <label className="block text-xl font-semibold text-slate-900 mb-4 flex items-center">
+                      <svg className="w-5 h-5 text-slate-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m0 0h2m-2 0v4l3-3m-3 3l-3-3" />
+                      </svg>
+                      What type of loan were you expecting?
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {(['FHA', 'Conventional', 'VA', 'USDA', 'Not sure'] as const).map((type) => (
+                        <label key={type} className={`relative flex items-center justify-center p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                          userContext.expectedLoanType === type 
+                            ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                        }`}>
+                          <input
+                            type="radio"
+                            name="loanType"
+                            value={type}
+                            checked={userContext.expectedLoanType === type}
+                            onChange={(e) => setUserContext({...userContext, expectedLoanType: e.target.value as any})}
+                            className="sr-only"
+                          />
+                          <span className="font-medium text-center">{type}</span>
+                          {userContext.expectedLoanType === type && (
+                            <div className="absolute top-2 right-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Cost Promises Card */}
+                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-100">
+                    <label className="block text-xl font-semibold text-slate-900 mb-4 flex items-center">
+                      <svg className="w-5 h-5 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                      </svg>
+                      Were you promised any of the following?
+                    </label>
+                    <div className="space-y-4">
+                      <label className={`flex items-center p-4 rounded-lg border cursor-pointer transition-all hover:shadow-sm ${
+                        userContext.promisedZeroClosingCosts 
+                          ? 'border-amber-300 bg-amber-50' 
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}>
+                        <input
+                          type="checkbox"
+                          checked={userContext.promisedZeroClosingCosts}
+                          onChange={(e) => setUserContext({...userContext, promisedZeroClosingCosts: e.target.checked})}
+                          className="w-5 h-5 text-amber-600 border-slate-300 rounded focus:ring-amber-500 focus:ring-2"
+                        />
+                        <span className="ml-3 font-medium text-slate-800">Zero closing costs</span>
+                      </label>
+                      
+                      <div className="bg-white rounded-lg p-4 border border-slate-200">
+                        <h4 className="font-medium text-slate-800 mb-3">Promised amounts (if any):</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-sm text-slate-600 mb-1">Lender credit</label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span className="text-slate-400 text-sm">$</span>
+                              </div>
+                              <input
+                                type="number"
+                                value={userContext.promisedLenderCredit || ''}
+                                onChange={(e) => setUserContext({...userContext, promisedLenderCredit: e.target.value ? Number(e.target.value) : undefined})}
+                                className="block w-full pl-7 pr-3 py-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                                placeholder="0"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm text-slate-600 mb-1">Seller credit</label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span className="text-slate-400 text-sm">$</span>
+                              </div>
+                              <input
+                                type="number"
+                                value={userContext.promisedSellerCredit || ''}
+                                onChange={(e) => setUserContext({...userContext, promisedSellerCredit: e.target.value ? Number(e.target.value) : undefined})}
+                                className="block w-full pl-7 pr-3 py-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                                placeholder="0"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm text-slate-600 mb-1">Builder rebate</label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span className="text-slate-400 text-sm">$</span>
+                              </div>
+                              <input
+                                type="number"
+                                value={userContext.promisedRebate || ''}
+                                onChange={(e) => setUserContext({...userContext, promisedRebate: e.target.value ? Number(e.target.value) : undefined})}
+                                className="block w-full pl-7 pr-3 py-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                                placeholder="0"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Builder Relationship Card */}
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100">
+                    <label className="block text-xl font-semibold text-slate-900 mb-4 flex items-center">
+                      <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                      Did you use the builder's preferred lender?
+                    </label>
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <label className={`flex items-center justify-center p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                        userContext.usedBuildersPreferredLender 
+                          ? 'border-green-500 bg-green-50 text-green-700' 
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                      }`}>
                         <input
                           type="radio"
-                          name="loanType"
-                          value={type}
-                          checked={userContext.expectedLoanType === type}
-                          onChange={(e) => setUserContext({...userContext, expectedLoanType: e.target.value as any})}
-                          className="mr-3 text-blue-600"
+                          name="builderLender"
+                          value="yes"
+                          checked={userContext.usedBuildersPreferredLender}
+                          onChange={(e) => setUserContext({...userContext, usedBuildersPreferredLender: true})}
+                          className="sr-only"
                         />
-                        <span className="text-gray-700">{type} Loan</span>
+                        <span className="font-medium">Yes</span>
                       </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Cost Promises */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Were you promised any of the following?
-                  </label>
-                  <div className="space-y-3">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={userContext.promisedZeroClosingCosts}
-                        onChange={(e) => setUserContext({...userContext, promisedZeroClosingCosts: e.target.checked})}
-                        className="mr-3 text-blue-600"
-                      />
-                      <span className="text-gray-700">Zero closing costs</span>
-                    </label>
-                    
-                    <div className="ml-6 space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <label className="text-sm text-gray-600">Lender credit: $</label>
+                      <label className={`flex items-center justify-center p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                        !userContext.usedBuildersPreferredLender 
+                          ? 'border-green-500 bg-green-50 text-green-700' 
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                      }`}>
                         <input
-                          type="number"
-                          value={userContext.promisedLenderCredit || ''}
-                          onChange={(e) => setUserContext({...userContext, promisedLenderCredit: e.target.value ? Number(e.target.value) : undefined})}
-                          className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
-                          placeholder="0"
+                          type="radio"
+                          name="builderLender"
+                          value="no"
+                          checked={!userContext.usedBuildersPreferredLender}
+                          onChange={(e) => setUserContext({...userContext, usedBuildersPreferredLender: false})}
+                          className="sr-only"
                         />
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <label className="text-sm text-gray-600">Seller credit: $</label>
-                        <input
-                          type="number"
-                          value={userContext.promisedSellerCredit || ''}
-                          onChange={(e) => setUserContext({...userContext, promisedSellerCredit: e.target.value ? Number(e.target.value) : undefined})}
-                          className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
-                          placeholder="0"
-                        />
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <label className="text-sm text-gray-600">Builder rebate: $</label>
-                        <input
-                          type="number"
-                          value={userContext.promisedRebate || ''}
-                          onChange={(e) => setUserContext({...userContext, promisedRebate: e.target.value ? Number(e.target.value) : undefined})}
-                          className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
-                          placeholder="0"
-                        />
-                      </div>
+                        <span className="font-medium">No</span>
+                      </label>
                     </div>
+                    
+                    {userContext.usedBuildersPreferredLender && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">Builder name:</label>
+                          <input
+                            type="text"
+                            value={userContext.builderName || ''}
+                            onChange={(e) => setUserContext({...userContext, builderName: e.target.value})}
+                            className="w-full px-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                            placeholder="e.g., LGI Homes, D.R. Horton, etc."
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-3">
+                            Did the builder promise to cover any fees?
+                          </label>
+                          <div className="space-y-2">
+                            {[
+                              { key: 'builderPromisedToCoverTitleFees', label: 'Title insurance fees' },
+                              { key: 'builderPromisedToCoverEscrowFees', label: 'Escrow/settlement fees' },
+                              { key: 'builderPromisedToCoverInspection', label: 'Home inspection fees' }
+                            ].map(({ key, label }) => (
+                              <label key={key} className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm ${
+                                userContext[key as keyof UserContext] 
+                                  ? 'border-green-300 bg-green-50' 
+                                  : 'border-slate-200 bg-white hover:border-slate-300'
+                              }`}>
+                                <input
+                                  type="checkbox"
+                                  checked={userContext[key as keyof UserContext] as boolean}
+                                  onChange={(e) => setUserContext({...userContext, [key]: e.target.checked})}
+                                  className="w-4 h-4 text-green-600 border-slate-300 rounded focus:ring-green-500 focus:ring-2"
+                                />
+                                <span className="ml-3 text-slate-800">{label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Buyer Representation Card */}
+                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-100">
+                    <label className="block text-xl font-semibold text-slate-900 mb-4 flex items-center">
+                      <svg className="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      Did you have your own buyer's agent?
+                    </label>
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <label className={`flex items-center justify-center p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                        userContext.hadBuyerAgent 
+                          ? 'border-purple-500 bg-purple-50 text-purple-700' 
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="buyerAgent"
+                          value="yes"
+                          checked={userContext.hadBuyerAgent}
+                          onChange={(e) => setUserContext({...userContext, hadBuyerAgent: true})}
+                          className="sr-only"
+                        />
+                        <span className="font-medium">Yes</span>
+                      </label>
+                      <label className={`flex items-center justify-center p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                        !userContext.hadBuyerAgent 
+                          ? 'border-purple-500 bg-purple-50 text-purple-700' 
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="buyerAgent"
+                          value="no"
+                          checked={!userContext.hadBuyerAgent}
+                          onChange={(e) => setUserContext({...userContext, hadBuyerAgent: false})}
+                          className="sr-only"
+                        />
+                        <span className="font-medium">No</span>
+                      </label>
+                    </div>
+                    
+                    {userContext.hadBuyerAgent && (
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Agent name:</label>
+                        <input
+                          type="text"
+                          value={userContext.buyerAgentName || ''}
+                          onChange={(e) => setUserContext({...userContext, buyerAgentName: e.target.value})}
+                          className="w-full px-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                          placeholder="Your buyer's agent name"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Builder Relationship */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Did you use the builder's preferred/recommended lender?
-                  </label>
-                  <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="builderLender"
-                        value="yes"
-                        checked={userContext.usedBuildersPreferredLender}
-                        onChange={(e) => setUserContext({...userContext, usedBuildersPreferredLender: true})}
-                        className="mr-3 text-blue-600"
-                      />
-                      <span className="text-gray-700">Yes</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="builderLender"
-                        value="no"
-                        checked={!userContext.usedBuildersPreferredLender}
-                        onChange={(e) => setUserContext({...userContext, usedBuildersPreferredLender: false})}
-                        className="mr-3 text-blue-600"
-                      />
-                      <span className="text-gray-700">No</span>
-                    </label>
+                <div className="mt-8">
+                  <button
+                    onClick={handleContextSubmit}
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-[1.02] shadow-lg"
+                  >
+                    Continue to Upload
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Upload Section */}
+            {currentStep === 'upload' && (
+              <div className="animate-in slide-in-from-right duration-300">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-slate-900 mb-3">Upload your closing document</h2>
+                  <p className="text-lg text-slate-600">We'll analyze it against your expectations to catch any fraud or deception.</p>
+                  <button
+                    onClick={handleBackToContext}
+                    className="inline-flex items-center mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Edit your details
+                  </button>
+                </div>
+            
+                <div
+                  className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${
+                    selectedFile 
+                      ? 'border-green-300 bg-green-50' 
+                      : 'border-slate-300 bg-slate-50 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  <div className="mb-6">
+                    {selectedFile ? (
+                      <svg className="mx-auto h-16 w-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    ) : (
+                      <svg className="mx-auto h-16 w-16 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
                   </div>
                   
-                  {userContext.usedBuildersPreferredLender && (
-                    <div className="mt-3">
-                      <label className="block text-sm text-gray-600 mb-1">Builder name:</label>
-                      <input
-                        type="text"
-                        value={userContext.builderName || ''}
-                        onChange={(e) => setUserContext({...userContext, builderName: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded"
-                        placeholder="e.g., LGI Homes, D.R. Horton, etc."
-                      />
-                    </div>
-                  )}
+                  <div className="mb-6">
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <span className={`text-xl font-semibold ${selectedFile ? 'text-green-700' : 'text-blue-600 hover:text-blue-500'}`}>
+                        {selectedFile ? 'File ready!' : 'Click to upload'}
+                      </span>
+                      {!selectedFile && <span className="text-slate-500"> or drag and drop</span>}
+                    </label>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                  </div>
+                  
+                  <p className="text-sm text-slate-500">PDF files only • Max 10MB</p>
                 </div>
 
-                {/* Builder Promises */}
-                {userContext.usedBuildersPreferredLender && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Did the builder promise to cover any of these fees?
-                    </label>
-                    <div className="space-y-2">
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={userContext.builderPromisedToCoverTitleFees}
-                          onChange={(e) => setUserContext({...userContext, builderPromisedToCoverTitleFees: e.target.checked})}
-                          className="mr-3 text-blue-600"
-                        />
-                        <span className="text-gray-700">Title insurance fees</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={userContext.builderPromisedToCoverEscrowFees}
-                          onChange={(e) => setUserContext({...userContext, builderPromisedToCoverEscrowFees: e.target.checked})}
-                          className="mr-3 text-blue-600"
-                        />
-                        <span className="text-gray-700">Escrow/settlement fees</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={userContext.builderPromisedToCoverInspection}
-                          onChange={(e) => setUserContext({...userContext, builderPromisedToCoverInspection: e.target.checked})}
-                          className="mr-3 text-blue-600"
-                        />
-                        <span className="text-gray-700">Home inspection fees</span>
-                      </label>
+                {selectedFile && (
+                  <div className="mt-6 p-4 bg-green-50 rounded-xl border border-green-200">
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <p className="font-medium text-green-900">{selectedFile.name}</p>
+                        <p className="text-sm text-green-700">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* Buyer Representation */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Did you have your own buyer's agent/realtor?
-                  </label>
-                  <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="buyerAgent"
-                        value="yes"
-                        checked={userContext.hadBuyerAgent}
-                        onChange={(e) => setUserContext({...userContext, hadBuyerAgent: true})}
-                        className="mr-3 text-blue-600"
-                      />
-                      <span className="text-gray-700">Yes</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="buyerAgent"
-                        value="no"
-                        checked={!userContext.hadBuyerAgent}
-                        onChange={(e) => setUserContext({...userContext, hadBuyerAgent: false})}
-                        className="mr-3 text-blue-600"
-                      />
-                      <span className="text-gray-700">No</span>
-                    </label>
-                  </div>
-                  
-                  {userContext.hadBuyerAgent && (
-                    <div className="mt-3">
-                      <label className="block text-sm text-gray-600 mb-1">Agent name:</label>
-                      <input
-                        type="text"
-                        value={userContext.buyerAgentName || ''}
-                        onChange={(e) => setUserContext({...userContext, buyerAgentName: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded"
-                        placeholder="Your buyer's agent name"
-                      />
+                {error && (
+                  <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L5.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      <p className="text-red-800">{error}</p>
                     </div>
-                  )}
+                  </div>
+                )}
+
+                <div className="mt-8">
+                  <button
+                    onClick={handleUpload}
+                    disabled={!selectedFile || uploading}
+                    className={`w-full py-4 px-6 rounded-xl font-semibold transition-all transform ${
+                      !selectedFile || uploading
+                        ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:scale-[1.02] shadow-lg'
+                    }`}
+                  >
+                    {uploading ? (
+                      <div className="flex items-center justify-center">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Analyzing Document...
+                      </div>
+                    ) : (
+                      'Analyze Document'
+                    )}
+                  </button>
                 </div>
               </div>
-
-              <div className="mt-8">
-                <button
-                  onClick={handleContextSubmit}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                >
-                  Continue to Upload
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Upload Section */}
-          {currentStep === 'upload' && (
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold">Upload PDF Document</h2>
-                <button
-                  onClick={handleBackToContext}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                >
-                  ← Edit your situation
-                </button>
-              </div>
-            
-            <div
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors"
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            >
-              <div className="mb-4">
-                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              
-              <div className="mb-4">
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <span className="text-lg font-medium text-blue-600 hover:text-blue-500">
-                    Click to upload
-                  </span>
-                  <span className="text-gray-500"> or drag and drop</span>
-                </label>
-                <input
-                  id="file-upload"
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </div>
-              
-              <p className="text-sm text-gray-500">PDF files only</p>
-            </div>
-
-            {selectedFile && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-700">
-                  Selected: <span className="font-medium">{selectedFile.name}</span>
-                </p>
-              </div>
             )}
 
-            {error && (
-              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700">{error}</p>
-              </div>
-            )}
-
-            <div className="mt-6">
-              <button
-                onClick={handleUpload}
-                disabled={!selectedFile || uploading}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-              >
-                {uploading ? 'Analyzing...' : 'Analyze Document'}
-              </button>
-            </div>
-          </div>
-
-          )}
-
-          {/* Results Section */}
-          {currentStep === 'results' && report && (
-            <div className="border-t pt-8">
-              <h2 className="text-2xl font-semibold mb-6">Analysis Results</h2>
-              
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-lg font-medium">Status:</span>
-                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                    {report.status}
-                  </span>
+            {/* Results Section */}
+            {currentStep === 'results' && report && (
+              <div className="animate-in slide-in-from-bottom duration-300">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-slate-900 mb-3">Analysis Complete</h2>
+                  <button
+                    onClick={handleBackToContext}
+                    className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Start over with new document
+                  </button>
                 </div>
                 
-                {report.metadata && (
-                  <div className="text-sm text-gray-600 mb-4">
-                    <p>File: {report.metadata.filename}</p>
-                    <p>Text extracted: {report.metadata.text_length.toLocaleString()} characters</p>
+                <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-lg font-medium text-slate-700">Document Status:</span>
+                    <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                      report.flags.length > 0 
+                        ? 'bg-red-100 text-red-800' 
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {report.flags.length > 0 ? `⚠️ ${report.flags.length} Issues Found` : '✓ Clean'}
+                    </span>
                   </div>
-                )}
-              </div>
+                  
+                  {report.metadata && (
+                    <div className="text-sm text-slate-600">
+                      <p>File: <span className="font-medium">{report.metadata.filename}</span></p>
+                      <p>Analyzed: <span className="font-medium">{report.metadata.text_length.toLocaleString()}</span> characters</p>
+                    </div>
+                  )}
+                </div>
 
-              {report.flags.length > 0 ? (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 text-red-700">
-                    ⚠️ Issues Found ({report.flags.length})
-                  </h3>
+                {report.flags.length > 0 ? (
                   <div className="space-y-4">
                     {report.flags.map((flag, index) => (
-                      <div key={index} className="border border-red-200 rounded-lg p-4 bg-red-50">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-red-900">{flag.rule.replace(/_/g, ' ').toUpperCase()}</h4>
-                        </div>
-                        <p className="text-red-800 mb-2">{flag.message}</p>
-                        <div className="bg-white border rounded p-2">
-                          <p className="text-sm text-gray-700 font-mono">{flag.snippet}</p>
+                      <div key={index} className={`rounded-xl border-2 overflow-hidden transition-all hover:shadow-lg ${getSeverityColor(flag.message)}`}>
+                        <div className="p-6">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center">
+                              <span className="text-2xl mr-3">{getSeverityIcon(flag.message)}</span>
+                              <h4 className={`text-lg font-bold ${getSeverityTextColor(flag.message)}`}>
+                                {flag.rule.replace(/_/g, ' ').toUpperCase()}
+                              </h4>
+                            </div>
+                          </div>
+                          <p className={`text-lg mb-4 ${getSeverityTextColor(flag.message)}`}>{flag.message}</p>
+                          <details className="group">
+                            <summary className="cursor-pointer text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors">
+                              View document evidence
+                            </summary>
+                            <div className="mt-3 p-4 bg-white border border-slate-200 rounded-lg">
+                              <p className="text-sm text-slate-700 font-mono leading-relaxed">{flag.snippet}</p>
+                            </div>
+                          </details>
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-green-600 text-6xl mb-4">✓</div>
-                  <h3 className="text-lg font-semibold text-green-700 mb-2">No Issues Found</h3>
-                  <p className="text-gray-600">Your document passed all validation checks.</p>
-                </div>
-              )}
-            </div>
-          )}
+                ) : (
+                  <div className="text-center py-16">
+                    <div className="text-green-500 text-8xl mb-6">✓</div>
+                    <h3 className="text-2xl font-bold text-green-700 mb-3">No Issues Found</h3>
+                    <p className="text-lg text-slate-600 max-w-md mx-auto">
+                      Your document passed all validation checks. No predatory practices or fraud detected.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
