@@ -33,7 +33,10 @@ reports_store: Dict[str, Dict[str, Any]] = {}
 
 # Initialize rule engine
 try:
-    rule_engine = RuleEngine("rules-config.yaml")
+    import os
+    config_path = os.path.join(os.path.dirname(__file__), "rules-config.yaml")
+    rule_engine = RuleEngine(config_path)
+    print(f"Rule engine initialized successfully with {len(rule_engine.rules)} rules")
 except Exception as e:
     print(f"Warning: Failed to initialize rule engine: {e}")
     rule_engine = None
