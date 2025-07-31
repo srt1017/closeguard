@@ -1,4 +1,5 @@
 rules:
+  # Original rules
   - name: "high_closing_costs"
     type: "numeric_threshold"
     pattern: "(?:closing costs?|total fees?).*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
@@ -36,3 +37,65 @@ rules:
     threshold: 7.0
     operator: ">"
     message: "High interest rate detected: {value}%"
+
+  # Enhanced predatory practice detection rules
+  - name: "excessive_origination_percentage"
+    type: "calculated_percentage"
+    numerator_pattern: "(?:Origination|\\. \\. \\. \\$)([0-9,]+(?:\\.[0-9]{2})?)(?:\\s|$)"
+    denominator_pattern: "Loan Amount.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    threshold: 1.5
+    operator: ">"
+    message: "Excessive origination fee: {percentage}% of loan amount (typical range: 0.5-1.5%)"
+
+  - name: "missing_buyer_representation"
+    type: "regex_absence"
+    pattern: "Real Estate Broker \\(B\\).*?(?!N/A)[A-Za-z]"
+    message: "No buyer agent representation found - you may lack independent advocacy"
+
+  - name: "buyer_broker_marked_na"
+    type: "regex_amount"
+    pattern: "Real Estate Broker \\(B\\).*?N/A.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    threshold: 0
+    operator: ">="
+    message: "Buyer broker listed as N/A but charging fees - consider seeking independent representation"
+
+  - name: "builder_captive_services"
+    type: "cross_reference_pattern"
+    primary_pattern: "Seller.*?([A-Z][A-Z\\s]+(?:HOMES?|BUILDER?|CONSTRUCTION))"
+    secondary_patterns:
+      - pattern: "Lender.*?([A-Z][A-Z\\s]+(?:MORTGAGE|LENDING|FINANCIAL))"
+        service: "mortgage"
+      - pattern: "Insurance.*?([A-Z][A-Z\\s]+(?:INSURANCE|ASSURANCE))"
+        service: "insurance"
+      - pattern: "Title.*?([A-Z][A-Z\\s]+(?:TITLE|ESCROW))"
+        service: "title"
+    fuzzy_match: true
+    message: "⚠️ BUILDER CAPTIVE SERVICES: {primary} controls {services} - seek independent pricing comparison"
+
+  - name: "expensive_loan_combination"
+    type: "compound_rule"
+    conditions:
+      - pattern: "Interest Rate.*?([0-9]+(?:\\.[0-9]{1,3})?)%"
+        threshold: 6.5
+        operator: ">"
+        value_name: "rate"
+      - pattern: "Total Closing Costs.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+        threshold: 15000
+        operator: ">"
+        value_name: "fees"
+    message: "⚠️ EXPENSIVE LOAN: High interest rate ({rate}%) + high closing costs (${fees}) - shop alternatives"
+
+  - name: "zero_closing_costs_deception"
+    type: "numeric_threshold"
+    pattern: "(?:Total Closing Costs|Closing Costs).*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    threshold: 1000
+    operator: ">"
+    message: "⚠️ 'ZERO CLOSING COSTS' DECEPTION: Despite promises, you're paying ${value} in closing costs"
+
+  - name: "excessive_closing_cost_ratio"
+    type: "calculated_percentage"
+    numerator_pattern: "Total Closing Costs.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    denominator_pattern: "Loan Amount.*?\\$([0-9,]+(?:\\.[0-9]{2})?)"
+    threshold: 4.0
+    operator: ">"
+    message: "Closing costs are {percentage}% of loan amount - typical range is 2-3%"
