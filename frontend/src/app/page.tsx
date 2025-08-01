@@ -216,6 +216,83 @@ export default function Home() {
     }));
   };
 
+  const getLaymanExplanation = (flagRule: string, flagMessage: string) => {
+    const explanations: Record<string, {
+      whatItMeans: string;
+      whyItMatters: string;
+      whatToDo: string;
+      impact: 'low' | 'medium' | 'high';
+    }> = {
+      'high_closing_costs': {
+        whatItMeans: "Your closing costs are unusually high compared to your loan amount - over 4% when most people pay 2-3%.",
+        whyItMatters: "This could mean you're paying thousands more than necessary, or fees have been shifted to you that should be paid by others.",
+        whatToDo: "Ask your lender for a detailed breakdown of each fee and compare with other lenders. Many fees can be negotiated or waived.",
+        impact: 'medium'
+      },
+      'excessive_origination_percentage': {
+        whatItMeans: "The lender is charging you more than 1.5% of your loan amount just to process your application - this is above typical rates.",
+        whyItMatters: "On a $300,000 loan, every extra 0.5% in origination fees costs you $1,500 more. This adds up quickly.",
+        whatToDo: "Shop around with other lenders. Many charge 0.5-1% or waive origination fees entirely. This fee is often negotiable.",
+        impact: 'medium'
+      },
+      'missing_buyer_representation': {
+        whatItMeans: "You don't appear to have your own real estate agent representing your interests in this transaction.",
+        whyItMatters: "Without your own agent, you lack independent advocacy. The seller's agent works for them, not you.",
+        whatToDo: "Consider hiring a buyer's agent for future transactions. For this one, be extra careful reviewing all terms and consider an attorney consultation.",
+        impact: 'high'
+      },
+      'builder_captive_services': {
+        whatItMeans: "The same company building your home also controls your mortgage, insurance, or title services - they're all connected.",
+        whyItMatters: "When one company controls multiple services, you lose the benefit of competitive pricing and independent oversight.",
+        whatToDo: "Get quotes from independent mortgage lenders, insurance agents, and title companies. Compare pricing and terms.",
+        impact: 'medium'
+      },
+      'zero_closing_costs_deception': {
+        whatItMeans: "You were likely promised 'zero closing costs' but you're actually paying substantial closing fees anyway.",
+        whyItMatters: "This is a bait-and-switch tactic. You expected to pay nothing extra at closing but are being charged thousands.",
+        whatToDo: "Reference your original agreement or marketing materials. Demand the builder honor their promise or explain the discrepancy in writing.",
+        impact: 'high'
+      },
+      'loan_type_contradiction': {
+        whatItMeans: "Your loan is marked as both FHA and Conventional, which is impossible - it can only be one type.",
+        whyItMatters: "This is a serious document error that could affect your loan terms, insurance requirements, and future refinancing options.",
+        whatToDo: "Stop the closing immediately. Demand a corrected document before signing anything. This error could have major legal implications.",
+        impact: 'high'
+      },
+      'fha_mip_on_conventional_loan': {
+        whatItMeans: "You're being charged FHA mortgage insurance on a conventional loan - these are two different loan types that don't mix.",
+        whyItMatters: "You're paying for insurance you don't need and aren't eligible for. This could be hundreds of dollars monthly.",
+        whatToDo: "Refuse to pay this fee. Demand immediate correction. If it's truly a conventional loan, no FHA insurance should be charged.",
+        impact: 'high'
+      },
+      'demand_feature_on_purchase_loan': {
+        whatItMeans: "Your loan includes a 'demand feature' which allows the lender to demand you pay the full balance at any time, for any reason.",
+        whyItMatters: "This gives the lender tremendous power over you. They could force you to pay hundreds of thousands immediately or face foreclosure.",
+        whatToDo: "Do not sign this loan. Demand removal of the demand feature. This is extremely risky for homebuyers and unnecessary for purchase loans.",
+        impact: 'high'
+      },
+      'buyer_paying_title_insurance': {
+        whatItMeans: "You're paying for Owner's Title Insurance, but in Texas, this is typically the seller's responsibility.",
+        whyItMatters: "You're paying for something that should cost you nothing. This could be $800-1,500 of unnecessary expense.",
+        whatToDo: "Ask why you're paying this fee when it's typically seller-paid in Texas. Request the seller cover this cost as is customary.",
+        impact: 'medium'
+      },
+      'buyer_paying_survey_fee': {
+        whatItMeans: "You're paying for a property survey, but in Texas new construction, builders typically handle and pay for this.",
+        whyItMatters: "This is likely a $300-600 fee that's being shifted to you when it should be included in the builder's costs.",
+        whatToDo: "Ask the builder why they're not covering the survey cost. This is typically included in new construction pricing.",
+        impact: 'low'
+      }
+    };
+
+    return explanations[flagRule] || {
+      whatItMeans: "This flag indicates a potential issue with your closing documents that warrants closer examination.",
+      whyItMatters: "Unexpected or excessive charges can cost you thousands of dollars and may indicate deceptive practices.",
+      whatToDo: "Review this item carefully with your lender or real estate professional. Consider getting a second opinion if the amounts seem high.",
+      impact: 'medium' as const
+    };
+  };
+
   const generateVerificationQuestion = (flagRule: string, flagMessage: string) => {
     // Generate questions where "No" confirms the issue exists
     const questions: Record<string, string> = {
@@ -1053,6 +1130,55 @@ export default function Home() {
                             <p className={`text-lg leading-relaxed ${getSeverityTextColor(flag.message)}`}>{flag.message}</p>
                           </div>
 
+                          {/* Layman's Explanation */}
+                          <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                            <h5 className="font-semibold text-slate-900 mb-3 flex items-center">
+                              <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              What this means for you
+                            </h5>
+                            
+                            <div className="space-y-3 text-sm">
+                              <div className="flex items-start">
+                                <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                                <div>
+                                  <span className="font-medium text-slate-700">What it means:</span>
+                                  <p className="text-slate-600 mt-1">{getLaymanExplanation(flag.rule, flag.message).whatItMeans}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-start">
+                                <div className="flex-shrink-0 w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3"></div>
+                                <div>
+                                  <span className="font-medium text-slate-700">Why it matters:</span>
+                                  <p className="text-slate-600 mt-1">{getLaymanExplanation(flag.rule, flag.message).whyItMatters}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-start">
+                                <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2 mr-3"></div>
+                                <div>
+                                  <span className="font-medium text-slate-700">What you should do:</span>
+                                  <p className="text-slate-600 mt-1">{getLaymanExplanation(flag.rule, flag.message).whatToDo}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                                <span className="text-xs text-slate-500">Impact Level:</span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  getLaymanExplanation(flag.rule, flag.message).impact === 'high' 
+                                    ? 'bg-red-100 text-red-800' 
+                                    : getLaymanExplanation(flag.rule, flag.message).impact === 'medium'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-green-100 text-green-800'
+                                }`}>
+                                  {getLaymanExplanation(flag.rule, flag.message).impact.toUpperCase()} IMPACT
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
                           <details className="group">
                             <summary className="cursor-pointer flex items-center text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors mb-2">
                               <svg className="w-4 h-4 mr-2 group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1126,6 +1252,57 @@ export default function Home() {
                         </div>
                       </div>
                     ))}
+
+                    {/* Impact Summary */}
+                    {report.flags.length > 0 && (
+                      <div className="mt-8 bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+                        <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
+                          <svg className="w-5 h-5 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                          </svg>
+                          Action Priority Guide
+                        </h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                          <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                            <div className="text-2xl font-bold text-red-600">
+                              {report.flags.filter(flag => getLaymanExplanation(flag.rule, flag.message).impact === 'high').length}
+                            </div>
+                            <div className="text-sm font-medium text-red-700">Critical Issues</div>
+                            <div className="text-xs text-red-600 mt-1">Act immediately</div>
+                          </div>
+                          <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <div className="text-2xl font-bold text-yellow-600">
+                              {report.flags.filter(flag => getLaymanExplanation(flag.rule, flag.message).impact === 'medium').length}
+                            </div>
+                            <div className="text-sm font-medium text-yellow-700">Important Issues</div>
+                            <div className="text-xs text-yellow-600 mt-1">Address soon</div>
+                          </div>
+                          <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                            <div className="text-2xl font-bold text-green-600">
+                              {report.flags.filter(flag => getLaymanExplanation(flag.rule, flag.message).impact === 'low').length}
+                            </div>
+                            <div className="text-sm font-medium text-green-700">Minor Issues</div>
+                            <div className="text-xs text-green-600 mt-1">Review when convenient</div>
+                          </div>
+                        </div>
+
+                        {report.flags.filter(flag => getLaymanExplanation(flag.rule, flag.message).impact === 'high').length > 0 && (
+                          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <h4 className="font-semibold text-red-800 mb-2">🚨 Critical Actions Needed</h4>
+                            <p className="text-sm text-red-700 mb-3">
+                              You have {report.flags.filter(flag => getLaymanExplanation(flag.rule, flag.message).impact === 'high').length} critical issue(s) that require immediate attention before proceeding with this closing.
+                            </p>
+                            <ul className="text-sm text-red-700 space-y-1">
+                              <li>• Do not sign any documents until these issues are resolved</li>
+                              <li>• Contact your lender immediately to discuss corrections</li>
+                              <li>• Consider consulting with a real estate attorney</li>
+                              <li>• Document all communications about these issues</li>
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Verification Summary */}
                     {Object.keys(flagVerifications).length > 0 && (
