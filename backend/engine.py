@@ -127,9 +127,15 @@ class RuleEngine:
                     
                 rule_flags = self._apply_rule_with_context(rule, text, user_context)
                 
-                # If this rule found any flags, add the first one and mark rule as flagged
+                # If this rule found any flags, prioritize context-enhanced flags
                 if rule_flags:
-                    flags.append(rule_flags[0])  # Only take the first match
+                    # Look for context-enhanced flags (with 🚨 BROKEN PROMISE, etc.)
+                    context_enhanced = [f for f in rule_flags if '🚨 BROKEN PROMISE' in f.get('message', '') or '🚨 CAPTIVE LENDER CONFIRMED' in f.get('message', '') or '🚨 REPRESENTATION FRAUD' in f.get('message', '')]
+                    
+                    if context_enhanced:
+                        flags.append(context_enhanced[0])  # Use enhanced message
+                    else:
+                        flags.append(rule_flags[0])  # Use regular message
                     flagged_rules.add(rule_name)
                     
             except Exception as e:
@@ -236,7 +242,7 @@ class RuleEngine:
         rule_name = rule.get('name', 'unknown')
         
         # Check if pattern IS found in text
-        match = re.search(pattern, text, re.IGNORECASE)
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
         if match:
             # Get surrounding context for snippet
             start = max(0, match.start() - 50)
@@ -648,7 +654,7 @@ class RuleEngine:
         elif rule_name == 'missing_buyer_representation' and user_context.get('hadBuyerAgent'):
             # User thought they had an agent but document shows N/A
             import re
-            if re.search(r"Real Estate Broker \(B\).*?N/A", text, re.IGNORECASE):
+            if re.search(r"Real Estate Broker \(B\).*?N/A", text, re.IGNORECASE | re.DOTALL):
                 agent_name = user_context.get('buyerAgentName', 'your agent')
                 flags.append({
                     'rule': rule_name,

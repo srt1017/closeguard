@@ -4,3 +4,5 @@ pdfplumber
 PyPDF2
 pyyaml
 python-multipart
+pytesseract
+pdf2image
