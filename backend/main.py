@@ -1,7 +1,12 @@
+"""
+Updated CloseGuard API using the new modular architecture.
+This maintains full API compatibility while using the new services.
+"""
+
 import os
 import uuid
-import tempfile
 import json
+import time
 from typing import Dict, Any, Optional
 from pathlib import Path
 
@@ -10,70 +15,88 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from parser import extract_text
-from engine import RuleEngine
+# Import new services
+from services.rule_engine import RuleEngineService
+from services.scoring_service import ScoringService
+from services.document_parser import DocumentParserService
+from services.validation_service import ValidationService
+from models.user_context import UserContext as UserContextModel
+from models.report import Report, ReportMetadata
+from config.settings import Settings
 
+
+# Initialize settings
+settings = Settings.from_env()
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="CloseGuard API",
-    description="MVP backend for analyzing home-closing PDFs",
-    version="1.0.0"
+    title=settings.api_title,
+    description=settings.api_description,
+    version=settings.api_version
 )
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Temporarily allow all for debugging
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.allow_origins,
+    allow_credentials=settings.allow_credentials,
+    allow_methods=settings.allow_methods,
+    allow_headers=settings.allow_headers,
 )
 
-# In-memory store for reports
+# In-memory store for reports (same as before for compatibility)
 reports_store: Dict[str, Dict[str, Any]] = {}
 
-# Initialize rule engine
-rule_engine = None
-print("Starting CloseGuard API...")
+# Initialize services
+rule_engine_service = None
+scoring_service = None
+document_parser_service = None
+validation_service = None
 
-def init_rule_engine():
-    global rule_engine
+print("Starting CloseGuard API v2 with modular architecture...")
+
+
+def init_services():
+    """Initialize all services."""
+    global rule_engine_service, scoring_service, document_parser_service, validation_service
+    
     try:
-        import os
-        print(f"Current working directory: {os.getcwd()}")
-        print(f"Files in directory: {os.listdir('.')}")
-        
+        # Find rules config file
         config_path = os.path.join(os.path.dirname(__file__), "rules-config.yaml")
+        if not os.path.exists(config_path):
+            config_path = "rules-config.yaml"
+        
         print(f"Looking for rules config at: {config_path}")
         
-        if os.path.exists(config_path):
-            rule_engine = RuleEngine(config_path)
-            print(f"Rule engine initialized successfully with {len(rule_engine.rules)} rules")
+        # Initialize services
+        rule_engine_service = RuleEngineService(config_path)
+        scoring_service = ScoringService(
+            max_score=settings.max_forensic_score,
+            severity_weights=settings.severity_weights
+        )
+        document_parser_service = DocumentParserService(settings.temp_dir)
+        validation_service = ValidationService()
+        
+        # Validate rules configuration
+        validation_result = rule_engine_service.validate_rules_config()
+        if validation_result['valid']:
+            print(f"Services initialized successfully with {validation_result['rules_count']} rules")
+            if validation_result['warnings']:
+                print(f"Warnings: {validation_result['warnings']}")
         else:
-            print(f"Rules config file not found at {config_path}")
-            # Try current directory as fallback
-            if os.path.exists("rules-config.yaml"):
-                rule_engine = RuleEngine("rules-config.yaml")
-                print(f"Rule engine initialized from current directory with {len(rule_engine.rules)} rules")
-            else:
-                print("No rules config found - continuing without rules")
+            print(f"WARNING: Rules validation failed: {validation_result['errors']}")
+            
     except Exception as e:
-        print(f"Warning: Failed to initialize rule engine: {e}")
-        print(f"Error type: {type(e)}")
+        print(f"ERROR: Failed to initialize services: {e}")
         import traceback
         traceback.print_exc()
 
-# Initialize at startup
-init_rule_engine()
+
+# Initialize services at startup
+init_services()
 
 
-@app.get("/")
-async def root():
-    """Health check endpoint."""
-    return {"message": "CloseGuard API is running"}
-
-
+# Pydantic model for API compatibility (matches original)
 class UserContext(BaseModel):
     expectedLoanType: str = 'Not sure'
     expectedInterestRate: Optional[float] = None
@@ -94,6 +117,50 @@ class UserContext(BaseModel):
     expectedPurchasePrice: Optional[float] = None
     expectedLoanAmount: Optional[float] = None
 
+
+def convert_api_context_to_model(api_context: UserContext) -> UserContextModel:
+    """Convert API UserContext to internal model."""
+    return UserContextModel(
+        expected_loan_type=api_context.expectedLoanType,
+        expected_interest_rate=api_context.expectedInterestRate,
+        expected_closing_costs=api_context.expectedClosingCosts,
+        promised_zero_closing_costs=api_context.promisedZeroClosingCosts,
+        promised_lender_credit=api_context.promisedLenderCredit,
+        promised_seller_credit=api_context.promisedSellerCredit,
+        promised_rebate=api_context.promisedRebate,
+        used_builders_preferred_lender=api_context.usedBuildersPreferredLender,
+        builder_name=api_context.builderName,
+        builder_promised_to_cover_title_fees=api_context.builderPromisedToCoverTitleFees,
+        builder_promised_to_cover_escrow_fees=api_context.builderPromisedToCoverEscrowFees,
+        builder_promised_to_cover_inspection=api_context.builderPromisedToCoverInspection,
+        has_buyer_agent_representation=api_context.hadBuyerAgent,
+        buyer_agent_name=api_context.buyerAgentName,
+        expected_purchase_price=api_context.expectedPurchasePrice,
+        expected_loan_amount=api_context.expectedLoanAmount
+    )
+
+
+@app.get("/")
+async def root():
+    """Health check endpoint."""
+    return {"message": "CloseGuard API v2 is running"}
+
+
+@app.get("/health")
+async def health_check():
+    """Detailed health check with service status."""
+    return {
+        "status": "healthy",
+        "services": {
+            "rule_engine": rule_engine_service is not None,
+            "scoring_service": scoring_service is not None,
+            "document_parser": document_parser_service is not None,
+            "validation_service": validation_service is not None
+        },
+        "rules_summary": rule_engine_service.get_rules_summary() if rule_engine_service else None
+    }
+
+
 @app.post("/upload")
 async def upload_pdf(
     file: UploadFile = File(...),
@@ -109,176 +176,150 @@ async def upload_pdf(
     Returns:
         JSON response with report_id
     """
-    # Validate file type
-    if not file.filename or not file.filename.lower().endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="File must be a PDF")
+    start_time = time.time()
     
-    if not file.content_type or file.content_type != 'application/pdf':
-        raise HTTPException(status_code=400, detail="Invalid content type. Expected application/pdf")
+    print(f"=== UPLOAD DEBUG ===")
+    print(f"File: {file.filename}")
+    print(f"Content-Type: {file.content_type}")
+    print(f"Context: {context}")
+    
+    # Validate file using validation service
+    file_size = 0
+    if hasattr(file, 'size'):
+        file_size = file.size
+    
+    validation_result = validation_service.validate_file_upload(
+        file.filename, 
+        file_size, 
+        settings.max_file_size
+    )
+    
+    if not validation_result['valid']:
+        raise HTTPException(status_code=400, detail=validation_result['errors'][0])
     
     # Generate unique report ID
     report_id = str(uuid.uuid4())
     
     try:
-        # Create temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
-            # Read and save uploaded file
-            content = await file.read()
-            temp_file.write(content)
-            temp_file_path = temp_file.name
+        # Read file content
+        content = await file.read()
         
-        try:
-            # Extract text from PDF
-            extracted_text = extract_text(temp_file_path)
-            
-            if not extracted_text.strip():
-                raise HTTPException(status_code=400, detail="No text could be extracted from the PDF")
-            
-            # Parse user context if provided
-            user_context = None
-            if context:
-                try:
-                    context_data = json.loads(context)
-                    user_context = UserContext(**context_data)
-                except (json.JSONDecodeError, TypeError) as e:
-                    print(f"Warning: Failed to parse user context: {e}")
-            
-            # Run rule engine analysis
-            flags = []
-            if rule_engine:
-                if user_context:
-                    flags = rule_engine.check_text_with_context(extracted_text, user_context.dict())
-                else:
-                    flags = rule_engine.check_text(extracted_text)
-            
-            # Calculate forensic analytics
-            forensic_score = rule_engine.calculate_forensic_score(flags) if rule_engine else 100
-            severity_counts = rule_engine.categorize_flags_by_severity(flags) if rule_engine else {'high': 0, 'medium': 0, 'low': 0}
-            
-            # Store report in memory
-            reports_store[report_id] = {
-                "status": "done",
-                "flags": flags,
-                "filename": file.filename,
-                "text_length": len(extracted_text),
-                "user_context": user_context.dict() if user_context else None,
-                "forensic_score": forensic_score,
-                "total_flags": len(flags),
-                "high_severity": severity_counts['high'],
-                "medium_severity": severity_counts['medium'],
-                "low_severity": severity_counts['low']
-            }
-            
-        finally:
-            # Clean up temporary file
+        # Extract text using document parser service
+        print(f"Extracting text from uploaded file...")
+        extracted_text = document_parser_service.extract_text_from_upload(content, file.filename)
+        print(f"Extracted {len(extracted_text)} characters")
+        
+        if not extracted_text.strip():
+            raise HTTPException(status_code=400, detail="No text could be extracted from the PDF")
+        
+        # Parse user context if provided
+        user_context_model = None
+        if context:
             try:
-                os.unlink(temp_file_path)
-            except OSError:
-                pass
+                context_data = json.loads(context)
+                api_context = UserContext(**context_data)
+                user_context_model = convert_api_context_to_model(api_context)
+                print(f"Parsed user context: {user_context_model.to_dict()}")
+            except Exception as e:
+                print(f"WARNING: Failed to parse context: {e}")
+                # Continue without context rather than failing
         
-        return JSONResponse(
-            status_code=200,
-            content={"report_id": report_id}
+        # Analyze text using rule engine service
+        print("Running rule analysis...")
+        flags = rule_engine_service.analyze_text(extracted_text, user_context_model)
+        print(f"Found {len(flags)} flags")
+        
+        # Calculate analytics using scoring service
+        analytics = scoring_service.create_analytics(flags)
+        print(f"Forensic score: {analytics.forensic_score}")
+        
+        # Create metadata
+        processing_time = time.time() - start_time
+        metadata = ReportMetadata(
+            filename=file.filename,
+            text_length=len(extracted_text),
+            upload_timestamp=str(int(time.time())),
+            processing_time=processing_time
         )
+        
+        # Create report
+        report = Report(
+            id=report_id,
+            status="completed",
+            flags=flags,
+            analytics=analytics,
+            metadata=metadata
+        )
+        
+        # Store report (convert to dict for compatibility with original format)
+        reports_store[report_id] = report.to_dict()
+        
+        print(f"Report {report_id} created successfully in {processing_time:.2f}s")
+        return {"report_id": report_id}
         
     except HTTPException:
         raise
     except Exception as e:
+        print(f"ERROR processing file: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to process PDF: {str(e)}")
 
 
 @app.get("/report/{report_id}")
 async def get_report(report_id: str):
-    """
-    Get analysis report by report ID.
+    """Get analysis report by ID."""
     
-    Args:
-        report_id: UUID of the report
-        
-    Returns:
-        JSON response with status and flags
-    """
+    # Validate report ID
+    validation_result = validation_service.validate_report_id(report_id)
+    if not validation_result['valid']:
+        raise HTTPException(status_code=400, detail=validation_result['errors'][0])
+    
     if report_id not in reports_store:
         raise HTTPException(status_code=404, detail="Report not found")
     
-    report = reports_store[report_id]
-    
-    return JSONResponse(
-        status_code=200,
-        content={
-            "status": report["status"],
-            "flags": report["flags"],
-            "analytics": {
-                "forensic_score": report.get("forensic_score", 100),
-                "total_flags": report.get("total_flags", 0),
-                "high_severity": report.get("high_severity", 0),
-                "medium_severity": report.get("medium_severity", 0),
-                "low_severity": report.get("low_severity", 0)
-            },
-            "metadata": {
-                "filename": report.get("filename"),
-                "text_length": report.get("text_length")
-            }
-        }
-    )
+    return JSONResponse(content=reports_store[report_id])
 
 
 @app.get("/reports")
 async def list_reports():
-    """
-    List all available reports (for debugging/admin purposes).
-    
-    Returns:
-        JSON response with all report IDs and their status
-    """
-    report_summary = {}
-    for report_id, report in reports_store.items():
-        report_summary[report_id] = {
-            "status": report["status"],
-            "flags_count": len(report["flags"]),
-            "filename": report.get("filename")
-        }
-    
-    return JSONResponse(
-        status_code=200,
-        content={"reports": report_summary}
-    )
+    """List all reports (admin endpoint)."""
+    return {
+        "reports": list(reports_store.keys()),
+        "count": len(reports_store)
+    }
 
 
 @app.delete("/report/{report_id}")
 async def delete_report(report_id: str):
-    """
-    Delete a report from memory.
+    """Delete a report."""
     
-    Args:
-        report_id: UUID of the report to delete
-        
-    Returns:
-        JSON response confirming deletion
-    """
+    # Validate report ID
+    validation_result = validation_service.validate_report_id(report_id)
+    if not validation_result['valid']:
+        raise HTTPException(status_code=400, detail=validation_result['errors'][0])
+    
     if report_id not in reports_store:
         raise HTTPException(status_code=404, detail="Report not found")
     
     del reports_store[report_id]
+    return {"message": "Report deleted successfully"}
+
+
+# Development endpoints for debugging
+@app.get("/debug/rules")
+async def debug_rules():
+    """Debug endpoint to inspect loaded rules."""
+    if not rule_engine_service:
+        raise HTTPException(status_code=500, detail="Rule engine not initialized")
     
-    return JSONResponse(
-        status_code=200,
-        content={"message": f"Report {report_id} deleted successfully"}
-    )
-
-
-# Exception handlers
-@app.exception_handler(Exception)
-async def general_exception_handler(request, exc):
-    """Handle unexpected exceptions."""
-    return JSONResponse(
-        status_code=500,
-        content={"detail": f"Internal server error: {str(exc)}"}
-    )
+    return {
+        "rules_summary": rule_engine_service.get_rules_summary(),
+        "validation": rule_engine_service.validate_rules_config()
+    }
 
 
 if __name__ == "__main__":
     import uvicorn
-    import os
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
