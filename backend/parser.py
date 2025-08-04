@@ -90,18 +90,23 @@ def extract_text_ocr(path: str) -> str:
         raise Exception("OCR dependencies not available. Install with: pip install pytesseract pdf2image")
     
     try:
-        # Convert PDF pages to images
+        # Convert PDF pages to images with lower DPI for faster processing
         print(f"Converting PDF to images for OCR: {path}")
-        images = convert_from_path(path)
+        images = convert_from_path(path, dpi=150, first_page=1, last_page=10)  # Limit pages and lower DPI
         
         text_content = []
         for i, image in enumerate(images):
             print(f"Processing page {i+1}/{len(images)} with OCR...")
             
-            # Extract text from image using Tesseract
-            page_text = pytesseract.image_to_string(image, config='--psm 6')
+            # Extract text from image using Tesseract with faster config
+            page_text = pytesseract.image_to_string(image, config='--psm 6 -c tessedit_do_invert=0')
             if page_text.strip():
                 text_content.append(page_text)
+            
+            # Limit total processing time
+            if i >= 4:  # Process max 5 pages to avoid timeout
+                print(f"Limiting OCR to first 5 pages for performance")
+                break
         
         result = "\n".join(text_content)
         print(f"OCR completed. Extracted {len(result)} characters.")

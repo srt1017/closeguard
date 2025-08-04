@@ -3,17 +3,27 @@
  */
 
 import React from 'react';
-import { Report } from '@/types';
+import { Report, VerificationResponse } from '@/types';
 import { ForensicScoreCard } from './ForensicScoreCard';
 import { StatisticsCards } from './StatisticsCards';
 import { FlagsList } from './FlagsList';
+import { ActionPriorityGuide, CostBreakdown } from '@/components/analysis';
 
 interface DashboardLayoutProps {
   report: Report;
   onStartOver: () => void;
+  verifications?: Record<string, VerificationResponse>;
+  onVerificationResponse?: (flagRule: string, response: VerificationResponse) => void;
+  showVerification?: boolean;
 }
 
-export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ report, onStartOver }) => {
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
+  report, 
+  onStartOver, 
+  verifications = {},
+  onVerificationResponse,
+  showVerification = false
+}) => {
   if (!report.analytics) {
     return (
       <div className="text-center py-8">
@@ -41,7 +51,22 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ report, onStar
         <StatisticsCards analytics={report.analytics} />
 
         {/* Flags List */}
-        <FlagsList flags={report.flags} />
+        <FlagsList 
+          flags={report.flags}
+          verifications={verifications}
+          onVerificationResponse={onVerificationResponse}
+          showVerification={showVerification}
+        />
+
+        {/* Action Priority Guide */}
+        {showVerification && verifications && Object.keys(verifications).length > 0 && (
+          <ActionPriorityGuide 
+            flags={report.flags}
+          />
+        )}
+
+        {/* Cost Breakdown Analysis */}
+        <CostBreakdown report={report} />
 
         {/* Document Metadata */}
         {report.metadata && (

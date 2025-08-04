@@ -3,16 +3,29 @@
  */
 
 import React, { useState } from 'react';
-import { Flag } from '@/types';
+import { Flag, VerificationResponse } from '@/types';
 import { getSeverityLevel, getSeverityIcon, getSeverityColor } from '@/utils';
 import { Badge } from '@/components/ui';
+import { VerificationQuestion } from '@/components/verification';
+import { LaymanExplanations } from '@/components/analysis';
 
 interface FlagsListProps {
   flags: Flag[];
   title?: string;
+  verifications?: Record<string, VerificationResponse>;
+  onVerificationResponse?: (flagRule: string, response: VerificationResponse) => void;
+  showVerification?: boolean;
+  showExplanations?: boolean;
 }
 
-export const FlagsList: React.FC<FlagsListProps> = ({ flags, title = 'Issues Found' }) => {
+export const FlagsList: React.FC<FlagsListProps> = ({ 
+  flags, 
+  title = 'Issues Found',
+  verifications = {},
+  onVerificationResponse,
+  showVerification = false,
+  showExplanations = true
+}) => {
   const [expandedFlags, setExpandedFlags] = useState<Set<string>>(new Set());
 
   const toggleFlag = (flagRule: string) => {
@@ -83,11 +96,29 @@ export const FlagsList: React.FC<FlagsListProps> = ({ flags, title = 'Issues Fou
               
               {isExpanded && (
                 <div className="px-4 pb-4 border-t border-slate-200 bg-slate-50/50">
-                  <div className="pt-3">
-                    <h4 className="text-sm font-medium text-slate-700 mb-2">Evidence from document:</h4>
-                    <div className="bg-white p-3 rounded border text-xs font-mono text-slate-600 leading-relaxed overflow-x-auto">
-                      {flag.snippet}
+                  <div className="pt-3 space-y-4">
+                    {/* Evidence */}
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-700 mb-2">Evidence from document:</h4>
+                      <div className="bg-white p-3 rounded border text-xs font-mono text-slate-600 leading-relaxed overflow-x-auto">
+                        {flag.snippet}
+                      </div>
                     </div>
+
+                    {/* Layman Explanations */}
+                    {showExplanations && (
+                      <LaymanExplanations flag={flag} />
+                    )}
+
+                    {/* Verification Questions */}
+                    {showVerification && onVerificationResponse && (
+                      <VerificationQuestion
+                        flagRule={flag.rule}
+                        flagMessage={flag.message}
+                        currentResponse={verifications[flag.rule]}
+                        onResponse={(response) => onVerificationResponse(flag.rule, response)}
+                      />
+                    )}
                   </div>
                 </div>
               )}

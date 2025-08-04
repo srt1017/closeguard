@@ -32,5 +32,9 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD python -c "import requests, os; requests.get(f'http://localhost:{os.getenv(\"PORT\", 8000)}/')" || exit 1
 
-# Start command - use Python's built-in port handling
-CMD ["python", "main.py"]
+# Copy and make start script executable
+COPY start.sh .
+RUN chmod +x start.sh
+
+# Start command - use startup script with proper PORT handling
+CMD ["./start.sh"]

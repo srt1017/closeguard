@@ -79,6 +79,38 @@ export const UserContextForm: React.FC<UserContextFormProps> = ({
               </div>
             </div>
           </div>
+          <div className="grid md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Expected Interest Rate (%)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={userContext.expectedInterestRate || ''}
+                onChange={(e) => handleNumberChange('expectedInterestRate', e.target.value)}
+                className="block w-full px-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-slate-900 bg-white"
+                placeholder="6.5"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Expected Closing Costs
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-slate-500 text-sm">$</span>
+                </div>
+                <input
+                  type="number"
+                  value={userContext.expectedClosingCosts || ''}
+                  onChange={(e) => handleNumberChange('expectedClosingCosts', e.target.value)}
+                  className="block w-full pl-7 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-slate-900 bg-white"
+                  placeholder="5000"
+                />
+              </div>
+            </div>
+          </div>
         </Card>
 
         {/* Loan Type Card */}
@@ -167,6 +199,32 @@ export const UserContextForm: React.FC<UserContextFormProps> = ({
 
             <div className="flex items-center">
               <input
+                id="escrow-fees"
+                type="checkbox"
+                checked={userContext.builderPromisedToCoverEscrowFees}
+                onChange={(e) => onUpdateContext({ builderPromisedToCoverEscrowFees: e.target.checked })}
+                className="w-4 h-4 text-green-600 bg-gray-100 border-slate-300 rounded focus:ring-green-500 focus:ring-2"
+              />
+              <label htmlFor="escrow-fees" className="ml-3 text-sm font-medium text-slate-700">
+                Builder promised to cover escrow/settlement fees
+              </label>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                id="inspection-fees"
+                type="checkbox"
+                checked={userContext.builderPromisedToCoverInspection}
+                onChange={(e) => onUpdateContext({ builderPromisedToCoverInspection: e.target.checked })}
+                className="w-4 h-4 text-green-600 bg-gray-100 border-slate-300 rounded focus:ring-green-500 focus:ring-2"
+              />
+              <label htmlFor="inspection-fees" className="ml-3 text-sm font-medium text-slate-700">
+                Builder promised to cover inspection fees
+              </label>
+            </div>
+
+            <div className="flex items-center">
+              <input
                 id="buyer-agent"
                 type="checkbox"
                 checked={userContext.hadBuyerAgent}
@@ -177,7 +235,133 @@ export const UserContextForm: React.FC<UserContextFormProps> = ({
                 Had buyer's agent representation
               </label>
             </div>
+
+            <div className="flex items-center">
+              <input
+                id="mortgage-insurance"
+                type="checkbox"
+                checked={userContext.expectedMortgageInsurance}
+                onChange={(e) => onUpdateContext({ expectedMortgageInsurance: e.target.checked })}
+                className="w-4 h-4 text-green-600 bg-gray-100 border-slate-300 rounded focus:ring-green-500 focus:ring-2"
+              />
+              <label htmlFor="mortgage-insurance" className="ml-3 text-sm font-medium text-slate-700">
+                Expected mortgage insurance required
+              </label>
+            </div>
           </div>
+        </Card>
+
+        {/* Additional Details Card */}
+        <Card gradient="purple">
+          <h3 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
+            <svg className="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Additional Information
+          </h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Builder Name (if applicable)
+              </label>
+              <input
+                type="text"
+                value={userContext.builderName || ''}
+                onChange={(e) => onUpdateContext({ builderName: e.target.value })}
+                className="block w-full px-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-slate-900 bg-white"
+                placeholder="e.g., LGI Homes, D.R. Horton, etc."
+              />
+            </div>
+            {userContext.hadBuyerAgent && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Buyer's Agent Name
+                </label>
+                <input
+                  type="text"
+                  value={userContext.buyerAgentName || ''}
+                  onChange={(e) => onUpdateContext({ buyerAgentName: e.target.value })}
+                  className="block w-full px-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-slate-900 bg-white"
+                  placeholder="Your buyer's agent name"
+                />
+              </div>
+            )}
+          </div>
+          
+          {/* Credit and Rebate Fields */}
+          <div className="grid md:grid-cols-3 gap-4 mt-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Promised Lender Credit
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-slate-500 text-sm">$</span>
+                </div>
+                <input
+                  type="number"
+                  value={userContext.promisedLenderCredit || ''}
+                  onChange={(e) => handleNumberChange('promisedLenderCredit', e.target.value)}
+                  className="block w-full pl-7 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-slate-900 bg-white"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Promised Seller Credit
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-slate-500 text-sm">$</span>
+                </div>
+                <input
+                  type="number"
+                  value={userContext.promisedSellerCredit || ''}
+                  onChange={(e) => handleNumberChange('promisedSellerCredit', e.target.value)}
+                  className="block w-full pl-7 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-slate-900 bg-white"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Promised Rebate
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-slate-500 text-sm">$</span>
+                </div>
+                <input
+                  type="number"
+                  value={userContext.promisedRebate || ''}
+                  onChange={(e) => handleNumberChange('promisedRebate', e.target.value)}
+                  className="block w-full pl-7 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-slate-900 bg-white"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          {userContext.expectedMortgageInsurance && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Expected Mortgage Insurance Amount (monthly)
+              </label>
+              <div className="relative max-w-xs">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-slate-500 text-sm">$</span>
+                </div>
+                <input
+                  type="number"
+                  value={userContext.expectedMortgageInsuranceAmount || ''}
+                  onChange={(e) => handleNumberChange('expectedMortgageInsuranceAmount', e.target.value)}
+                  className="block w-full pl-7 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-slate-900 bg-white"
+                  placeholder="250"
+                />
+              </div>
+            </div>
+          )}
         </Card>
 
         <div className="mt-8">

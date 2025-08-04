@@ -315,6 +315,28 @@ mortgagebuddy/
 - Loading states and error messages
 - Mobile-first responsive design
 
+## Engineering Principles - CRITICAL
+
+### NO SPAGHETTI CODE
+- **NEVER add random optimizations or fixes without understanding root cause**
+- **NEVER add complexity to solve simple infrastructure/configuration issues**
+- **DIAGNOSE FIRST, CODE LAST**: Always understand WHY something is failing before writing code
+- **Keep solutions simple**: Prefer configuration changes over code changes
+- **Avoid technical debt**: Every addition must have clear justification and necessity
+
+### Problem-Solving Approach
+1. **Identify root cause** through logs, error messages, systematic testing
+2. **Try simple solutions first**: Configuration, settings, environment variables
+3. **Only code when infrastructure solutions are insufficient**
+4. **Keep changes minimal and focused**
+5. **Document the actual problem and solution**
+
+### When NOT to Add Code
+- Deployment/infrastructure issues → Fix deployment config
+- Environment/dependency issues → Fix environment setup  
+- Resource/timeout issues → Adjust resource limits
+- Network/connectivity issues → Fix network configuration
+
 ## Key Success Metrics
 
 ### Detection Accuracy
