@@ -52,6 +52,10 @@ class TridParser(BaseParser):
             if page3_items:
                 result.line_items.extend(page3_items)
             
+            page4_items = self._parse_page4()
+            if page4_items:
+                result.line_items.extend(page4_items)
+            
             # Set success status
             result.parsing_success = not self.has_errors()
             result.parsing_errors = self.errors.copy()
@@ -143,6 +147,22 @@ class TridParser(BaseParser):
             
         except Exception as e:
             self.add_error(f"Error parsing page 3: {e}")
+            return []
+    
+    def _parse_page4(self) -> list:
+        """Parse page 4 - loan disclosures and escrow information."""
+        try:
+            page4 = self.get_page(4)
+            if not page4:
+                return []
+            
+            # Use dedicated Page4Parser
+            from .page4_parser import Page4Parser
+            parser = Page4Parser(page4)
+            return parser.parse()
+            
+        except Exception as e:
+            self.add_error(f"Error parsing page 4: {e}")
             return []
     
     def get_document_metadata(self) -> dict:
