@@ -3,9 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from models.rule import Rule
-from models.flag import Flag
-from models.user_context import UserContext
+from models.core import Rule, Flag, UserContext
 
 
 class BaseRuleHandler(ABC):

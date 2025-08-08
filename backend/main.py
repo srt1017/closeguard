@@ -16,12 +16,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # Import new services
-from services.rule_engine import RuleEngineService
-from services.scoring_service import ScoringService
-from services.document_parser import DocumentParserService
-from services.validation_service import ValidationService
-from models.user_context import UserContext as UserContextModel
-from models.report import Report, ReportMetadata
+from services.analysis import RuleEngineService, ScoringService, ValidationService
+from services.parsing import DocumentParserService
+from models.core import UserContext as UserContextModel, Report, ReportMetadata
 from config.settings import Settings
 
 

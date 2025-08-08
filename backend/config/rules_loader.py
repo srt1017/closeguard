@@ -4,7 +4,7 @@ import yaml
 from typing import List
 from pathlib import Path
 
-from models.rule import Rule
+from models.core import Rule
 
 
 class RulesLoader:

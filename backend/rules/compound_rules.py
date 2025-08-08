@@ -3,9 +3,7 @@
 import re
 from typing import List, Optional, Dict, Any
 
-from models.rule import Rule, RuleType
-from models.flag import Flag
-from models.user_context import UserContext
+from models.core import Rule, RuleType, Flag, UserContext
 from .base_rule import BaseRuleHandler
 
 
