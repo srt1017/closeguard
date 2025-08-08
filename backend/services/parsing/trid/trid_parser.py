@@ -56,6 +56,17 @@ class TridParser(BaseParser):
             if page4_items:
                 result.line_items.extend(page4_items)
             
+            page5_items, page5_loan_data = self._parse_page5()
+            if page5_items:
+                result.line_items.extend(page5_items)
+            
+            # Update loan summary with page 5 data
+            if result.loan_summary and page5_loan_data:
+                if page5_loan_data.get('apr'):
+                    result.loan_summary.annual_percentage_rate = page5_loan_data['apr']
+                if page5_loan_data.get('tip'):
+                    result.loan_summary.total_interest_percentage = page5_loan_data['tip']
+            
             # Set success status
             result.parsing_success = not self.has_errors()
             result.parsing_errors = self.errors.copy()
@@ -164,6 +175,33 @@ class TridParser(BaseParser):
         except Exception as e:
             self.add_error(f"Error parsing page 4: {e}")
             return []
+    
+    def _parse_page5(self) -> tuple:
+        """Parse page 5 - loan calculations and disclosures."""
+        try:
+            page5 = self.get_page(5)
+            if not page5:
+                return [], {}
+            
+            # Use dedicated Page5Parser
+            from .page5_parser import Page5Parser
+            parser = Page5Parser(page5)
+            items = parser.parse()
+            
+            # Extract APR and TIP for loan summary
+            loan_data = {}
+            apr = parser.get_apr_for_loan_summary()
+            tip = parser.get_tip_for_loan_summary()
+            if apr:
+                loan_data['apr'] = apr
+            if tip:
+                loan_data['tip'] = tip
+            
+            return items, loan_data
+            
+        except Exception as e:
+            self.add_error(f"Error parsing page 5: {e}")
+            return [], {}
     
     def get_document_metadata(self) -> dict:
         """Get metadata about the parsed document."""

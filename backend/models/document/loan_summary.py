@@ -32,6 +32,10 @@ class LoanSummary:
     loan_type: Optional[str] = None
     loan_purpose: Optional[str] = None
     
+    # Page 5 - Loan calculations
+    annual_percentage_rate: Optional[float] = None
+    total_interest_percentage: Optional[float] = None
+    
     # Coordinates for highlighting key fields
     coordinates: Optional[Dict[str, CoordinatePosition]] = None
     
@@ -50,6 +54,8 @@ class LoanSummary:
             "cashToClose": self.cash_to_close,
             "loanType": self.loan_type,
             "loanPurpose": self.loan_purpose,
+            "annualPercentageRate": self.annual_percentage_rate,
+            "totalInterestPercentage": self.total_interest_percentage,
             "coordinates": {k: v.to_dict() for k, v in self.coordinates.items()} if self.coordinates else None
         }
     

@@ -37,6 +37,9 @@ class DocumentSection(Enum):
     BORROWER_TRANSACTION = "borrower_transaction"  # K
     SELLER_TRANSACTION = "seller_transaction"  # L
     
+    # Page 5 - Loan Calculations
+    LOAN_CALCULATIONS = "loan_calculations"
+    
     @classmethod
     def get_section_letter(cls, section: 'DocumentSection') -> str:
         """Get the letter identifier for a section (A, B, C, etc.)."""
