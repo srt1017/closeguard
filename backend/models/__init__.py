@@ -1,11 +1,27 @@
 """Data models for CloseGuard application."""
 
-from .flag import Flag, FlagSeverity
-from .report import Report, ReportAnalytics, ReportMetadata
-from .user_context import UserContext
-from .rule import Rule, RuleType
+# Core business models
+from .core import (
+    Flag, FlagSeverity,
+    Report, ReportAnalytics, ReportMetadata,
+    UserContext,
+    Rule, RuleType
+)
+
+# Document parsing models
+from .document import (
+    CoordinatePosition,
+    PaymentResponsibility, CostCategory, DocumentSection,
+    ClosingDisclosureLineItem,
+    LoanSummary,
+    ParsedDocument
+)
+
+# Analysis models (future)
+from .analysis import *
 
 __all__ = [
+    # Core models
     'Flag',
     'FlagSeverity', 
     'Report',
@@ -13,5 +29,14 @@ __all__ = [
     'ReportMetadata',
     'UserContext',
     'Rule',
-    'RuleType'
+    'RuleType',
+    
+    # Document parsing models
+    'CoordinatePosition',
+    'PaymentResponsibility',
+    'CostCategory', 
+    'DocumentSection',
+    'ClosingDisclosureLineItem',
+    'LoanSummary',
+    'ParsedDocument'
 ]

@@ -1,13 +1,17 @@
 """Services for CloseGuard application."""
 
-from .rule_engine import RuleEngineService
-from .scoring_service import ScoringService
-from .document_parser import DocumentParserService
-from .validation_service import ValidationService
+# Analysis services
+from .analysis import RuleEngineService, ScoringService, ValidationService
+
+# Parsing services (legacy for now, new ones to be added)
+from .parsing import DocumentParserService
 
 __all__ = [
+    # Analysis services
     'RuleEngineService',
     'ScoringService', 
-    'DocumentParserService',
-    'ValidationService'
+    'ValidationService',
+    
+    # Parsing services
+    'DocumentParserService'
 ]
