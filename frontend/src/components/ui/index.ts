@@ -7,3 +7,4 @@ export { Card } from './Card';
 export { Badge } from './Badge';
 export { LoadingSpinner } from './LoadingSpinner';
 export { ErrorBoundary } from './ErrorBoundary';
+export { Tabs } from './Tabs';

@@ -7,7 +7,8 @@
 
 import React from 'react';
 import { useCloseGuardApp } from '@/hooks';
-import { WizardLayout, UserContextForm, FileUpload } from '@/components/wizard';
+import { WizardLayout, FileUpload } from '@/components/wizard';
+import { UserContextFormSimple } from '@/components/wizard/UserContextFormSimple';
 import { DashboardLayout } from '@/components/dashboard';
 import { ErrorBoundary } from '@/components/ui';
 
@@ -23,7 +24,7 @@ export default function CloseGuardRefactored() {
               {/* Context Step */}
               {app.currentStep === 'context' && (
                 <ErrorBoundary>
-                  <UserContextForm
+                  <UserContextFormSimple
                     userContext={app.userContext.userContext}
                     onUpdateContext={app.userContext.updateContext}
                     onSubmit={app.handleContextSubmit}
@@ -53,8 +54,8 @@ export default function CloseGuardRefactored() {
                   <DashboardLayout
                     report={app.report.report}
                     onStartOver={app.resetApp}
-                    verifications={app.verification.verifications}
-                    onVerificationResponse={app.verification.setVerificationResponse}
+                    verifications={app.verification.flagVerifications}
+                    onVerificationResponse={app.verification.setVerification}
                     showVerification={true}
                   />
                 </ErrorBoundary>
